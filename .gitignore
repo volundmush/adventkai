@@ -53,3 +53,6 @@ nosetests.xml
 
 adventkai/profile_template/lib
 adventkai/profile_template/legacy
+
+*.sqlite
+/adventkai/profile_template/advent.sqlite

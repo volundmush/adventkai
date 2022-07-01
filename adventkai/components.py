@@ -8,35 +8,72 @@ import kdtree
 import sys
 from mudforge.utils import lazy_property
 from mudrich.circle import CircleToRich, CircleStrip
+import adventkai
 
 from .typing import Vnum, Entity, GridCoordinates, SpaceCoordinates
 
 
+@dataclass_json
 @dataclass
-class InGame:
-    pass
+class _Save:
+
+    def should_save(self) -> bool:
+        return True
+
+    def save_name(self) -> str:
+        return str(self.__class__.__name__)
+
+    def export(self):
+        return self.to_dict()
+
+    @classmethod
+    def deserialize(cls, data: typing.Any):
+        return cls.from_dict(data)
 
 
+@dataclass_json
 @dataclass
-class PendingRemove:
-    pass
+class _NoSave(_Save):
+
+    def should_save(self) -> bool:
+        return False
 
 
+@dataclass_json
 @dataclass
-class IsPersistent:
+class InGame(_NoSave):
     pass
 
 
 @dataclass_json
 @dataclass
-class EntityID:
-    module_name: str
-    ent_id: str
+class PendingRemove(_NoSave):
+    pass
+
+
+@dataclass_json
+@dataclass
+class IsPersistent(_NoSave):
+    pass
+
+
+@dataclass_json
+@dataclass
+class EntityID(_Save):
+    module_name: str = ""
+    prototype: str = ""
+    ent_id: str = ""
 
 
 @dataclass
-class FlagBase:
+class FlagBase(_Save):
     flags: dict[str, typing.Any] = field(default_factory=dict)
+
+    def should_save(self) -> bool:
+        return bool(self.flags)
+
+    def export(self):
+        return list(self.flags.keys())
 
 
 @dataclass
@@ -46,14 +83,14 @@ class AffectFlags(FlagBase):
 
 @dataclass_json
 @dataclass
-class PlayerCharacter:
-    unique_id: int
+class PlayerCharacter(_Save):
+    player_id: int
 
 
 @dataclass_json
 @dataclass
-class NPC:
-    vnum: typing.Optional[Vnum]
+class NPC(_Save):
+    vnum: Vnum = -1
 
 
 @dataclass
@@ -73,19 +110,25 @@ class PreferenceFlags(FlagBase):
 
 @dataclass_json
 @dataclass
-class Time:
+class Time(_Save):
     birth: int = 0
     created: int = 0
     maxage: int = 0
     logon: int = 0
     played: int = 0
 
+    def should_save(self) -> bool:
+        return bool(self.birth or self.created or self.maxage or self.logon or self.played)
+
 
 @dataclass_json
 @dataclass
-class Molt:
+class Molt(_Save):
     molt_exp: int = 0
     molt_level: int = 0
+
+    def should_save(self) -> bool:
+        return bool(self.molt_exp or self.molt_level)
 
 
 class AndroidType(IntEnum):
@@ -96,123 +139,176 @@ class AndroidType(IntEnum):
 
 @dataclass_json
 @dataclass
-class Android:
+class Android(_Save):
     upgrades: int = 0
     model: AndroidType = AndroidType.ABSORB
 
 
 @dataclass_json
 @dataclass
-class Absorber:
+class Absorber(_Save):
     ingest_learned: int = 0
     absorbs: int = 0
 
+    def should_save(self) -> bool:
+        return bool(self.ingest_learned or self.absorbs)
+
 
 @dataclass_json
 @dataclass
-class ForgetSkill:
+class ForgetSkill(_Save):
     forget_skill: int = 0
     forget_count: int = 0
 
+    def should_save(self) -> bool:
+        return bool(self.forget_count or self.forget_skill)
+
 
 @dataclass_json
 @dataclass
-class LifeForce:
+class LifeForce(_Save):
     life_percent: int = 0
-    life: float = 0.0
+    life: float = 1.0
+
+    def should_save(self) -> bool:
+        return bool(self.life < 1.0 or self.life_percent != 0)
 
 
 @dataclass_json
 @dataclass
-class Health:
+class Health(_Save):
     health: float = 1.0
     stamina: float = 1.0
     energy: float = 1.0
 
+    def should_save(self) -> bool:
+        return bool(self.health < 1.0 or self.stamina < 1.0 or self.energy < 1.0)
+
 
 @dataclass_json
 @dataclass
-class DeathData:
+class DeathData(_Save):
     death_time: int = 0
     death_count: int = 0
     # TODO: deal with death_room
 
+    def should_save(self) -> bool:
+        return bool(self.death_time or self.death_count)
+
+
 
 @dataclass_json
 @dataclass
-class Transform:
+class Transform(_Save):
     transformation: int = 0
 
-
-@dataclass_json
-@dataclass
-class TransCost:
-    transcost: dict[int, int] = field(default_factory=dict)
+    def should_save(self) -> bool:
+        return bool(self.transformation)
 
 
 @dataclass_json
 @dataclass
-class TransClass:
+class TransCost(_Save):
+    transcost: dict[int, bool] = field(default_factory=dict)
+
+    def should_save(self) -> bool:
+        for k, v in self.transcost.items():
+            if v:
+                return True
+        return False
+
+    def export(self):
+        return {k: v for k, v in self.transcost.items() if v}
+
+
+
+@dataclass_json
+@dataclass
+class TransClass(_Save):
     transclass: int = 0
 
-
-@dataclass_json
-@dataclass
-class Clan:
-    clan: str
+    def should_save(self) -> bool:
+        return bool(self.transclass)
 
 
 @dataclass_json
 @dataclass
-class Kaioken:
+class Clan(_Save):
+    clan: str = ""
+
+    def should_save(self) -> bool:
+        return bool(self.clan)
+
+
+@dataclass_json
+@dataclass
+class Kaioken(_Save):
     kaioken: int = 0
 
+    def should_save(self) -> bool:
+        return bool(self.kaioken)
+
 
 @dataclass_json
 @dataclass
-class Frozen:
+class Frozen(_Save):
     freeze_level: int = 0
 
+    def should_save(self) -> bool:
+        return bool(self.freeze_level)
+
 
 @dataclass_json
 @dataclass
-class AccountOwner:
+class AccountOwner(_Save):
     account: int = 0
 
 
 @dataclass_json
 @dataclass
-class AdminLevel:
+class AdminLevel(_Save):
     admin_level: int = 0
     admin_invis: int = 0
 
+    def should_save(self) -> bool:
+        return bool(self.admin_level or self.admin_invis)
+
 
 @dataclass_json
 @dataclass
-class Suppress:
+class Suppress(_Save):
     suppression: int = 0
     suppressed: int = 0
 
+    def should_save(self) -> bool:
+        return bool(self.suppressed or self.suppression)
+
 
 @dataclass_json
 @dataclass
-class PowerStats:
+class PowerStats(_Save):
     power: int = 1
     ki: int = 1
     stamina: int = 1
 
+    def should_save(self) -> bool:
+        return bool(self.power > 1 or self.ki > 1 or self.stamina > 1)
+
 
 @dataclass_json
 @dataclass
-class HasVnum:
+class HasVnum(_Save):
     vnum: Vnum = -1
 
 
 @dataclass_json
 @dataclass
-class Level:
+class Level(_Save):
     level: int = 0
-    level_adj: int = 1
+    level_adj: int = 0
+
+    def should_save(self) -> bool:
+        return bool(self.level or self.level_adj)
 
 
 class Sizes(IntEnum):
@@ -230,46 +326,47 @@ class Sizes(IntEnum):
 
 @dataclass_json
 @dataclass
-class Physics:
+class Physics(_Save):
     weight: float = 0
     height: float = 0
     size: Sizes = Sizes.UNDEFINED
 
+    def should_save(self) -> bool:
+        return bool(self.weight or self.height or self.size != Sizes.UNDEFINED)
+
 
 @dataclass_json
 @dataclass
-class Prototype:
+class Prototype(_Save):
     name: str
     ids: set[str] = field(default_factory=set)
 
 
-@dataclass_json
-@dataclass
-class HasPrototype:
-    prototype: Entity = -1
-
 
 @dataclass_json
 @dataclass
-class HasLegacyMobProto:
+class HasLegacyMobProto(_Save):
     vnum: int = -1
 
 
 @dataclass_json
 @dataclass
-class HasLegacyObjProto:
+class HasLegacyObjProto(_Save):
     vnum: int = -1
 
 
 @dataclass_json
 @dataclass
-class Alignment:
+class Alignment(_Save):
     alignment: int = 0
 
+    def should_save(self) -> bool:
+        return bool(self.alignment)
+
 
 @dataclass_json
 @dataclass
-class DgScriptProto:
+class DgScriptProto(_Save):
     attach_type: int = 0
     data_type: int = 0
     trigger_type: int = 0
@@ -296,7 +393,7 @@ class NestType(IntEnum):
 
 @dataclass_json
 @dataclass
-class DgScriptState:
+class DgScriptState(_Save):
     actor: Entity = -1
     state: TrigState = TrigState.DORMANT
     curr_line: int = 0
@@ -305,41 +402,111 @@ class DgScriptState:
 
 @dataclass_json
 @dataclass
-class Triggers:
+class Triggers(_Save):
     triggers: list[Vnum] = field(default_factory=list)
 
+    def should_save(self) -> bool:
+        return bool(self.triggers)
+
 
 @dataclass
-class DgScriptHolder:
+class DgScriptHolder(_Save):
     types: int = 0
     scripts: list[Entity] = field(default_factory=list)
-    variables: dict[str, str] = field(default_factory=dict)
+    variables: dict[int, dict[str, str]] = field(default_factory=dict)
+
+    def should_save(self) -> bool:
+        return bool(self.types or self.variables)
+
+    def export(self):
+        return {"types": self.types, "variables": self.variables}
 
 
+@dataclass_json
 @dataclass
-class Inventory:
+class Inventory(_NoSave):
     inventory: list[Entity] = field(default_factory=list)
 
 
+@dataclass_json
 @dataclass
-class Equipment:
+class Equipment(_NoSave):
     equipment: dict[int, Entity] = field(default_factory=dict)
 
 
+@dataclass_json
 @dataclass
-class InRoom:
+class SaveInRoom(EntityID):
+    vnum: Vnum = -1
+
+
+@dataclass_json
+@dataclass
+class InRoom(_Save):
     holder: Entity = -1
 
+    def should_save(self) -> bool:
+        return adventkai.WORLD.entity_exists(self.holder)
 
+    def save_name(self) -> str:
+        return "SaveInRoom"
+
+    def export(self):
+        data = {}
+        if (ent_data := adventkai.WORLD.try_component(self.holder, EntityID)):
+            data.update(ent_data.to_dict())
+        if (vn := adventkai.WORLD.try_component(self.holder, HasVnum)):
+            if vn:
+                data["vnum"] = vn.vnum
+        return data
+
+
+@dataclass_json
 @dataclass
-class InInventory:
+class SaveInInventory(EntityID):
+    pass
+
+
+@dataclass_json
+@dataclass
+class InInventory(_Save):
     holder: Entity = -1
 
+    def should_save(self) -> bool:
+        return adventkai.WORLD.entity_exists(self.holder)
 
+    def save_name(self) -> str:
+        return "SaveInInventory"
+
+    def export(self):
+        ent_data = adventkai.WORLD.try_component(self.holder, EntityID)
+        if ent_data:
+            return ent_data.to_dict()
+
+
+@dataclass_json
 @dataclass
-class Equipped:
+class SaveEquipped(EntityID):
+    slot: int = -1
+
+
+@dataclass_json
+@dataclass
+class Equipped(_Save):
     holder: Entity = -1
     slot: int = -1
+
+    def should_save(self) -> bool:
+        return adventkai.WORLD.entity_exists(self.holder)
+
+    def save_name(self) -> str:
+        return "SaveEquipped"
+
+    def export(self):
+        if (ent_data := adventkai.WORLD.try_component(self.holder, EntityID)):
+            data = ent_data.to_dict()
+            data["slot"] = self.slot
+            return data
 
 
 class PointHolder:
@@ -375,24 +542,51 @@ class SpaceMap:
 
 @dataclass_json
 @dataclass
-class Money:
+class Money(_Save):
     money: int = 0
+
+    def should_save(self) -> bool:
+        return bool(self.money)
 
 
 @dataclass_json
 @dataclass
-class BankAccount:
+class Bonuses(FlagBase):
+    pass
+
+
+@dataclass_json
+@dataclass
+class BankAccount(_Save):
     last_interest: int = 0
     value: int = 0
 
-@dataclass
-class Race:
-    race: "Race"
+    def should_save(self) -> bool:
+        return bool(self.last_interest or self.value)
 
 
 @dataclass_json
 @dataclass
-class Physiology:
+class Race(_Save):
+    race: "Race"
+
+    def export(self):
+        return self.race.mod_id
+
+    @classmethod
+    def deserialize(cls, data: typing.Any):
+        if(isinstance(data, int)):
+            if (r := adventkai.MODIFIERS_ID["race"].get(data, None)):
+                return cls(race=r)
+        if(isinstance(data, str)):
+            if (r := adventkai.MODIFIERS_NAMES["race"].get(data, None)):
+                return cls(race=r)
+        raise Exception(f"Cannot locate race {data}")
+
+
+@dataclass_json
+@dataclass
+class Physiology(_Save):
     sex: int = 0
     hair_length: int = 0
     hair_style: int = 0
@@ -403,10 +597,28 @@ class Physiology:
     aura_color: int = 0
     racial_pref: int = 0
 
+    def should_save(self) -> bool:
+        return bool(self.sex or self.hair_color or self.hair_length or self.hair_style or self.skin_color
+                    or self.eye_color or self.distinguishing_feature or self.aura_color or self.racial_pref)
 
+
+@dataclass_json
 @dataclass
-class Sensei:
+class Sensei(_Save):
     sensei: "Sensei"
+
+    def export(self):
+        return self.sensei.mod_id
+
+    @classmethod
+    def deserialize(cls, data: typing.Any):
+        if (isinstance(data, int)):
+            if (r := adventkai.MODIFIERS_ID["sensei"].get(data, None)):
+                return cls(sensei=r)
+        if (isinstance(data, str)):
+            if (r := adventkai.MODIFIERS_NAMES["sensei"].get(data, None)):
+                return cls(sensei=r)
+        raise Exception(f"Cannot locate sensei {data}")
 
 
 @dataclass_json
@@ -416,17 +628,34 @@ class Skill:
     bonus: int = 0
     perfection: int = 0
 
+    def should_save(self) -> bool:
+        return bool(self.level or self.bonus or self.perfection)
+
 
 @dataclass_json
 @dataclass
-class HasSkills:
-    skills: dict[0, Skill] = field(default_factory=dict)
+class HasSkills(_Save):
+    skills: dict[int, Skill] = field(default_factory=dict)
     skill_slots: int = 0
 
+    def should_save(self) -> bool:
+        if self.skil_slots:
+            return True
+        for k, v in self.skills:
+            if v.should_save():
+                return True
+
+    def export(self):
+        data = {"skill_slots": self.skill_slots}
+        skill_data = {k: v.to_dict() for k, v in self.skills.items() if v.should_save()}
+        if skill_data:
+            data["skills"] = skill_data
+        return data
+
 
 @dataclass_json
 @dataclass
-class Stats:
+class Stats(_Save):
     strength: int = 0
     intelligence: int = 0
     wisdom: int = 0
@@ -435,10 +664,14 @@ class Stats:
     speed: int = 0
     luck: int = 0
 
+    def should_save(self) -> bool:
+        return bool(self.strength or self.intelligence or self.wisdom or self.agility or self.constitution
+                    or self.speed or self.luck)
+
 
 @dataclass_json
 @dataclass
-class StatTrain:
+class StatTrain(_Save):
     strength: int = 0
     intelligence: int = 0
     wisdom: int = 0
@@ -446,9 +679,16 @@ class StatTrain:
     constitution: int = 0
     speed: int = 0
 
+    def should_save(self) -> bool:
+        return bool(self.strength or self.intelligence or self.wisdom or self.agility or self.constitution
+                    or self.speed)
 
-class StringBase:
+
+class StringBase(_Save):
     rich_cache = dict()
+
+    def should_save(self) -> bool:
+        return bool(self.rich.plain)
 
     def __init__(self, s: str):
         self.color = sys.intern(s)
@@ -471,6 +711,9 @@ class StringBase:
     def render(self, console, end: str = ""):
         return self.rich.render(console, end=end)
 
+    def export(self):
+        return self.color
+
 
 class Name(StringBase):
     pass
@@ -492,21 +735,65 @@ class ActionDescription(StringBase):
     pass
 
 
+@dataclass_json
 @dataclass
-class ExDescriptions:
+class ExDescriptions(_Save):
     ex_descriptions: list[typing.Tuple[Name, Description]] = field(default_factory=list)
+
+    def should_save(self) -> bool:
+        return bool(self.ex_descriptions)
+
+    def export(self):
+        return [(key.export(), desc.export()) for (key, desc) in self.ex_descriptions]
 
 
 @dataclass_json
 @dataclass
-class ItemValues:
+class ItemValues(_Save):
     values: dict[int, int] = field(default_factory=dict)
+
+    def should_save(self) -> bool:
+        for k, v in self.values.items():
+            if v:
+                return True
+        return False
+
+    def export(self):
+        return {k: v for k, v in self.values.items() if v}
+
+
+@dataclass_json
+@dataclass
+class Experience(_Save):
+    exp: int = 0
+
+    def should_save(self) -> bool:
+        return bool(self.exp)
+
+
+@dataclass_json
+@dataclass
+class AdminFlags(FlagBase):
+    pass
 
 
 @dataclass_json
 @dataclass
 class ItemType:
     type_flag: typing.Any
+
+    def export(self):
+        return self.type_flag.mod_id
+
+    @classmethod
+    def deserialize(cls, data: typing.Any):
+        if (isinstance(data, int)):
+            if (r := adventkai.MODIFIERS_ID["item_types"].get(data, None)):
+                return cls(type_flag=r)
+        if (isinstance(data, str)):
+            if (r := adventkai.MODIFIERS_NAMES["item_types"].get(data, None)):
+                return cls(type_flag=r)
+        raise Exception(f"Cannot locate Item Type {data}")
 
 
 class WearFlags(FlagBase):
@@ -611,8 +898,11 @@ class RoomExit:
 
 @dataclass_json
 @dataclass
-class Exits:
+class Exits(_Save):
     exits: dict[ExitDir, RoomExit] = field(default_factory=dict)
+
+    def should_save(self) -> bool:
+        return bool(self.exits)
 
 
 @dataclass
@@ -633,6 +923,19 @@ class ItemFlags(FlagBase):
 @dataclass
 class SectorType:
     sector: typing.Any
+
+    def export(self):
+        return self.sector.mod_id
+
+    @classmethod
+    def deserialize(cls, data: typing.Any):
+        if (isinstance(data, int)):
+            if (r := adventkai.MODIFIERS_ID["room_sectors"].get(data, None)):
+                return cls(sector=r)
+        if (isinstance(data, str)):
+            if (r := adventkai.MODIFIERS_NAMES["room_sectors"].get(data, None)):
+                return cls(sector=r)
+        raise Exception(f"Cannot locate Room Type {data}")
 
 
 @dataclass
@@ -662,7 +965,7 @@ class ZoneResetCmd:
     T - trigger command
     V - assign variable
     """
-    command: str
+    command: str = "-"
     if_flag: bool = False
     arg1: int = 0
     arg2: int = 0
@@ -690,7 +993,7 @@ class Zone:
 
 
 @dataclass
-class ZoneVnums:
+class ZoneVnums(_NoSave):
     rooms: dict[Vnum, Entity] = field(default_factory=dict)
     objects: dict[Vnum, Entity] = field(default_factory=dict)
     mobiles: dict[Vnum, Entity] = field(default_factory=dict)

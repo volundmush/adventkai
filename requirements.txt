@@ -3,3 +3,5 @@ esper
 kdtree
 dataclasses-json
 orjson
+django
+django-idmap

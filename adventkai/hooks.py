@@ -1,6 +1,18 @@
 from .utils import callables_from_module
 import adventkai
 import mudforge
+import os
+import sys
+
+
+def early_launch():
+    os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
+    import django
+    from django.conf import settings
+    from game_ext import django_settings
+    settings.configure(default_settings=django_settings)
+    django.setup()
+
 
 
 async def pre_start(entrypoint=None, services=None):

@@ -19,5 +19,7 @@ LEGACY_SHOPS = {}
 
 LEGACY_ZONES = {}
 
+PLAYER_ID = {}
+
 MODIFIERS_NAMES = defaultdict(dict)
 MODIFIERS_ID = defaultdict(dict)

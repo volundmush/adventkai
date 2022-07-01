@@ -67,3 +67,4 @@ modifiers:
 
 hooks:
   pre_start: "adventkai.hooks.pre_start"
+  early_launch: "adventkai.hooks.early_launch"

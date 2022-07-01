@@ -9,6 +9,8 @@ from .utils import get_or_emplace
 from adventkai import components as cm
 import asyncio
 
+from adventkai.db.accounts.models import Account
+
 
 def _read_json(p: Path):
     return orjson.loads(open(p, mode='rb').read())
@@ -23,6 +25,7 @@ class LegacyLoader:
 
     def __init__(self, p: Path):
         self.path = p
+        self.account_map = dict()
 
     async def load_assets(self):
         logging.info("Loading Legacy Zones...")
@@ -298,6 +301,12 @@ class LegacyLoader:
         self._load_sensei(ent, j)
         self._load_physiology(ent, j)
         self._load_power(ent, j)
+        if "alignment" in j:
+            WORLD.add_component(ent, cm.Alignment(alignment=j.pop("alignment")))
+        if "gold" in j:
+            WORLD.add_component(ent, cm.Money(money=j.pop("gold")))
+        if "level" in j:
+            WORLD.add_component(ent, cm.Level(level=j.pop("level")))
 
     async def load_mobiles(self):
         for k, v in adventkai.LEGACY_ZONES.items():
@@ -316,4 +325,71 @@ class LegacyLoader:
                 self._load_modifiers(ent, j, "act", "mob_flags", cm.MobFlags)
 
     async def load_userdata(self):
-        pass
+        logging.info("Loading Legacy Accounts...")
+        await self.load_accounts()
+        count = Account.objects.count()
+        logging.info(f"Loaded {count} Legacy Accounts from Files!")
+        await _broadcast(f"Loading {count} Legacy Accounts!")
+
+    async def load_accounts(self):
+        a_dir = self.path / "accounts"
+
+        for d in [d for d in a_dir.iterdir() if d.is_file()]:
+            await asyncio.sleep(0)
+            if not (j := _read_json(d)):
+                continue
+            acc = Account.objects.create_user(j.pop("name"), email=j.pop("email", None), password=j.pop("password", None))
+            logging.info(f"Loading Legacy User: {acc.username}")
+            if acc.username in ("Wayland", "Virtus", "Volund"):
+                acc.is_superuser = True
+                acc.save()
+            self.account_map[j.pop("account_id")] = acc
+
+    def _load_character_instance(self, ent, j, acc_owner):
+        self._load_character_base(ent, j)
+        self._load_modifiers(ent, j, "bonuses", "bonuses", cm.Bonuses)
+
+        bank = cm.BankAccount()
+        if "bank_gold" in j:
+            bank.value = j.pop("bank_gold")
+        if "lastint" in j:
+            bank.last_interest = j.pop("lastint")
+        if bank.value or bank.last_interest:
+            WORLD.add_component(ent, bank)
+
+        if "Skill" in j:
+            WORLD.add_component(ent, cm.HasSkills.from_dict(j.pop("Skill")))
+
+        if "exp" in j:
+            WORLD.add_component(ent, cm.Experience(exp=j.pop("exp")))
+
+        if "time" in j:
+            WORLD.add_component(ent, cm.Time.from_dict(j.pop("time")))
+
+    async def load_player_characters(self):
+        c_dir = self.path / "characters"
+
+        for d in [d for d in c_dir.iterdir() if d.is_file()]:
+            await asyncio.sleep(0)
+            if not (j := _read_json(d)):
+                continue
+            acc_id = j["player_specials"].pop("account_id")
+            acc = self.account_map[acc_id]
+            ent = WORLD.create_entity()
+            self._load_character_instance(ent, j, acc)
+            self._load_modifiers(ent, j, "act", "player_flags", cm.PlayerFlags)
+            player_id = j.pop("idnum")
+            WORLD.add_component(ent, cm.PlayerCharacter(player_id=player_id))
+            adventkai.PLAYER_ID[player_id] = ent
+
+            if (prf := j["player_specials"].pop("pref")):
+                j["pref"] = prf
+                self._load_modifiers(ent, j, "pref", "preference_flags", cm.PreferenceFlags)
+            self._load_modifiers(ent, j, "admflags", "admin_flags", cm.AdminFlags)
+
+            if "global_vars" in j:
+                h = cm.DgScriptHolder()
+                for g in j.pop("global_vars"):
+                    if g[1] not in h.variables:
+                        h.variables[g[1]] = dict()
+                    h.variables[g[1]][g[0]] = g[2]
