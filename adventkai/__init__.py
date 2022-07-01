@@ -19,4 +19,5 @@ LEGACY_SHOPS = {}
 
 LEGACY_ZONES = {}
 
-MODIFIERS = defaultdict(dict)
+MODIFIERS_NAMES = defaultdict(dict)
+MODIFIERS_ID = defaultdict(dict)

@@ -15,3 +15,18 @@ class Module:
     def __str__(self):
         return self.name
 
+
+    async def load_maps(self):
+        pass
+
+
+    async def load_prototypes(self):
+        pass
+
+
+    async def load_entities_initial(self):
+        pass
+
+
+    async def load_entities_finalize(self):
+        pass

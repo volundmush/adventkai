@@ -1,3 +1,5 @@
 mudforge
 esper
 kdtree
+dataclasses-json
+orjson

@@ -45,7 +45,7 @@ classes:
 services:
   telnet: "mudforge.services.telnet.TCPTelnetServerService"
   #  telnets: "mudforge.services.telnet.TLSTelnetServerService"
-  game: "mudforge.services.game.GameService"
+  game: "adventkai.game.GameService"
 
 # Python modules to auto-load Modifiers from.
 modifiers:
@@ -62,6 +62,7 @@ modifiers:
   - "adventkai.modifiers.room_flags"
   - "adventkai.modifiers.room_sectors"
   - "adventkai.modifiers.sensei"
+  - "adventkai.modifiers.wear_flags"
   - "adventkai.modifiers.zone_flags"
 
 hooks:

@@ -19,7 +19,7 @@ class GameService(OldGame):
         if legacy_path.exists() and legacy_path.is_dir():
             logging.info("Loading legacy database assets...")
             legacy_loader = LegacyLoader(legacy_path)
-            legacy_loader.load_assets()
+            await legacy_loader.load_assets()
 
         for p in [p for p in mod_path.iterdir() if p.is_dir()]:
             m = Module(p.name, p, save_root / p.name)
@@ -28,18 +28,18 @@ class GameService(OldGame):
         logging.info(f"Discovered {len(adventkai.MODULES)} modules!")
 
         for k, v in adventkai.MODULES.items():
-            v.load_maps()
+            await v.load_maps()
 
         for k, v in adventkai.MODULES.items():
-            v.load_prototypes()
+            await v.load_prototypes()
 
         sys_module = adventkai.MODULES["system"]
-        if not len(sys_module.save_dir.iterdir()) and legacy_loader:
+        if not sys_module.save_path.exists() and legacy_loader:
             logging.info("loading legacy player data...")
-            legacy_loader.load_userdata()
+            await legacy_loader.load_userdata()
 
         for k, v in adventkai.MODULES.items():
-            v.load_entities_initial()
+            await v.load_entities_initial()
 
         for k, v in adventkai.MODULES.items():
-            v.load_entities_finalize()
+            await v.load_entities_finalize()

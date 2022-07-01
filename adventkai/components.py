@@ -1,6 +1,8 @@
 import typing
+from pathlib import Path
 from collections import defaultdict
 from dataclasses import dataclass, field
+from dataclasses_json import dataclass_json
 from enum import IntEnum
 import kdtree
 import sys
@@ -8,6 +10,7 @@ from mudforge.utils import lazy_property
 from mudrich.circle import CircleToRich, CircleStrip
 
 from .typing import Vnum, Entity, GridCoordinates, SpaceCoordinates
+
 
 @dataclass
 class InGame:
@@ -24,6 +27,7 @@ class IsPersistent:
     pass
 
 
+@dataclass_json
 @dataclass
 class EntityID:
     module_name: str
@@ -40,11 +44,13 @@ class AffectFlags(FlagBase):
     pass
 
 
+@dataclass_json
 @dataclass
 class PlayerCharacter:
     unique_id: int
 
 
+@dataclass_json
 @dataclass
 class NPC:
     vnum: typing.Optional[Vnum]
@@ -65,6 +71,7 @@ class PreferenceFlags(FlagBase):
     pass
 
 
+@dataclass_json
 @dataclass
 class Time:
     birth: int = 0
@@ -74,6 +81,7 @@ class Time:
     played: int = 0
 
 
+@dataclass_json
 @dataclass
 class Molt:
     molt_exp: int = 0
@@ -86,30 +94,35 @@ class AndroidType(IntEnum):
     SENSE = 2
 
 
+@dataclass_json
 @dataclass
 class Android:
     upgrades: int = 0
     model: AndroidType = AndroidType.ABSORB
 
 
+@dataclass_json
 @dataclass
 class Absorber:
     ingest_learned: int = 0
     absorbs: int = 0
 
 
+@dataclass_json
 @dataclass
 class ForgetSkill:
     forget_skill: int = 0
     forget_count: int = 0
 
 
+@dataclass_json
 @dataclass
 class LifeForce:
     life_percent: int = 0
     life: float = 0.0
 
 
+@dataclass_json
 @dataclass
 class Health:
     health: float = 1.0
@@ -117,6 +130,7 @@ class Health:
     energy: float = 1.0
 
 
+@dataclass_json
 @dataclass
 class DeathData:
     death_time: int = 0
@@ -124,53 +138,63 @@ class DeathData:
     # TODO: deal with death_room
 
 
+@dataclass_json
 @dataclass
 class Transform:
     transformation: int = 0
 
 
+@dataclass_json
 @dataclass
 class TransCost:
     transcost: dict[int, int] = field(default_factory=dict)
 
 
+@dataclass_json
 @dataclass
 class TransClass:
     transclass: int = 0
 
 
+@dataclass_json
 @dataclass
 class Clan:
     clan: str
 
 
+@dataclass_json
 @dataclass
 class Kaioken:
     kaioken: int = 0
 
 
+@dataclass_json
 @dataclass
 class Frozen:
     freeze_level: int = 0
 
 
+@dataclass_json
 @dataclass
 class AccountOwner:
     account: int = 0
 
 
+@dataclass_json
 @dataclass
 class AdminLevel:
     admin_level: int = 0
     admin_invis: int = 0
 
 
+@dataclass_json
 @dataclass
 class Suppress:
     suppression: int = 0
     suppressed: int = 0
 
 
+@dataclass_json
 @dataclass
 class PowerStats:
     power: int = 1
@@ -178,11 +202,13 @@ class PowerStats:
     stamina: int = 1
 
 
+@dataclass_json
 @dataclass
 class HasVnum:
     vnum: Vnum = -1
 
 
+@dataclass_json
 @dataclass
 class Level:
     level: int = 0
@@ -202,6 +228,7 @@ class Sizes(IntEnum):
     COLOSSAL = 8
 
 
+@dataclass_json
 @dataclass
 class Physics:
     weight: float = 0
@@ -209,32 +236,38 @@ class Physics:
     size: Sizes = Sizes.UNDEFINED
 
 
+@dataclass_json
 @dataclass
 class Prototype:
     name: str
     ids: set[str] = field(default_factory=set)
 
 
+@dataclass_json
 @dataclass
 class HasPrototype:
     prototype: Entity = -1
 
 
+@dataclass_json
 @dataclass
 class HasLegacyMobProto:
     vnum: int = -1
 
 
+@dataclass_json
 @dataclass
 class HasLegacyObjProto:
     vnum: int = -1
 
 
+@dataclass_json
 @dataclass
 class Alignment:
     alignment: int = 0
 
 
+@dataclass_json
 @dataclass
 class DgScriptProto:
     attach_type: int = 0
@@ -261,6 +294,7 @@ class NestType(IntEnum):
     SWITCH = 2
 
 
+@dataclass_json
 @dataclass
 class DgScriptState:
     actor: Entity = -1
@@ -269,6 +303,7 @@ class DgScriptState:
     depth: list[typing.Tuple[NestType, int]] = field(default_factory=list)
 
 
+@dataclass_json
 @dataclass
 class Triggers:
     triggers: list[Vnum] = field(default_factory=list)
@@ -338,20 +373,26 @@ class SpaceMap:
     contents: kdtree.Node = field(default_factory=lambda: kdtree.create(dimensions=3))
 
 
+@dataclass_json
 @dataclass
 class Money:
     money: int = 0
 
 
+@dataclass_json
 @dataclass
 class BankAccount:
     last_interest: int = 0
     value: int = 0
 
+@dataclass
+class Race:
+    race: "Race"
 
+
+@dataclass_json
 @dataclass
 class Physiology:
-    race: "Race"
     sex: int = 0
     hair_length: int = 0
     hair_style: int = 0
@@ -363,9 +404,12 @@ class Physiology:
     racial_pref: int = 0
 
 
+@dataclass
 class Sensei:
     sensei: "Sensei"
 
+
+@dataclass_json
 @dataclass
 class Skill:
     level: int = 0
@@ -373,12 +417,14 @@ class Skill:
     perfection: int = 0
 
 
+@dataclass_json
 @dataclass
 class HasSkills:
     skills: dict[0, Skill] = field(default_factory=dict)
     skill_slots: int = 0
 
 
+@dataclass_json
 @dataclass
 class Stats:
     strength: int = 0
@@ -390,6 +436,7 @@ class Stats:
     luck: int = 0
 
 
+@dataclass_json
 @dataclass
 class StatTrain:
     strength: int = 0
@@ -450,14 +497,16 @@ class ExDescriptions:
     ex_descriptions: list[typing.Tuple[Name, Description]] = field(default_factory=list)
 
 
+@dataclass_json
 @dataclass
 class ItemValues:
     values: dict[int, int] = field(default_factory=dict)
 
 
+@dataclass_json
 @dataclass
 class ItemType:
-    type_flag: int = -1
+    type_flag: typing.Any
 
 
 class WearFlags(FlagBase):
@@ -541,6 +590,8 @@ class ExitDir(IntEnum):
             case _:
                 return "--"
 
+
+@dataclass_json
 @dataclass
 class RoomExit:
     description: typing.Optional[Description] = None
@@ -558,6 +609,7 @@ class RoomExit:
     dcfailsave: int = 0
 
 
+@dataclass_json
 @dataclass
 class Exits:
     exits: dict[ExitDir, RoomExit] = field(default_factory=dict)
@@ -565,6 +617,16 @@ class Exits:
 
 @dataclass
 class RoomFlags(FlagBase):
+    pass
+
+
+@dataclass
+class ZoneFlags(FlagBase):
+    pass
+
+
+@dataclass
+class ItemFlags(FlagBase):
     pass
 
 
@@ -583,3 +645,55 @@ class Session:
 @dataclass
 class HasSession:
     session: Entity = -1
+
+
+@dataclass_json
+@dataclass
+class ZoneResetCmd:
+    """
+    Commands:
+    M - Read a mobile
+    O - Read an Object
+    G - Give obj to mob
+    P - put obj in obj
+    G - obj to Char
+    E - obj to char equip
+    D - set state of door
+    T - trigger command
+    V - assign variable
+    """
+    command: str
+    if_flag: bool = False
+    arg1: int = 0
+    arg2: int = 0
+    arg3: int = 0
+    arg4: int = 0
+    arg5: int = 0
+    sarg1: str = ""
+    sarg2: str = ""
+
+
+@dataclass_json
+@dataclass
+class Zone:
+    dir: Path = None
+    legacy_builders: list[str] = field(default_factory=list)
+    builders: list[Entity] = field(default_factory=list)
+    lifespan: int = 0
+    age: int = 0
+    bot: int = 0
+    top: int = 0
+    reset_mode: int = 0
+    commands: list[ZoneResetCmd] = field(default_factory=list)
+    min_level: int = 0
+    max_level: int = 0
+
+
+@dataclass
+class ZoneVnums:
+    rooms: dict[Vnum, Entity] = field(default_factory=dict)
+    objects: dict[Vnum, Entity] = field(default_factory=dict)
+    mobiles: dict[Vnum, Entity] = field(default_factory=dict)
+    triggers: dict[Vnum, Entity] = field(default_factory=dict)
+    shops: dict[Vnum, Entity] = field(default_factory=dict)
+    guilds: dict[Vnum, Entity] = field(default_factory=dict)

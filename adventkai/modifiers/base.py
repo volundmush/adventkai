@@ -12,6 +12,9 @@ class Modifier:
     def __int__(self):
         return self.mod_id
 
+    def __repr__(self):
+        return f"<{self.__class__.__name__}: {int(self)}>"
+
     def is_providing_light(self, ent: Entity) -> bool:
         return False
 
