@@ -209,17 +209,17 @@ class Transform(_Save):
 @dataclass_json
 @dataclass
 class TransCost(_Save):
-    transcost: dict[int, bool] = field(default_factory=dict)
+    transcost: set[int] = field(default_factory=set)
 
     def should_save(self) -> bool:
-        for k, v in self.transcost.items():
-            if v:
-                return True
-        return False
+        return bool(self.transcost)
 
-    def export(self):
-        return {k: v for k, v in self.transcost.items() if v}
-
+    @classmethod
+    def deserialize(cls, data: typing.Any):
+        c = cls()
+        for i in data:
+            c.transcost.add(i)
+        return c
 
 
 @dataclass_json
@@ -939,14 +939,21 @@ class SectorType:
 
 
 @dataclass
-class Session:
+class Session(_Save):
     connections: set["GameConnection"] = field(default_factory=set)
     character: Entity = -1
     puppet: Entity = -1
 
+    def export(self):
+        data = {}
+        data["connections"] = [c.conn_id for c in self.connections]
+        if adventkai.WORLD.entity_exists(self.character):
+            data["character"] = adventkai.WORLD.get_component(self.character, EntityID).export()
+        return data
+
 
 @dataclass
-class HasSession:
+class HasSession(_NoSave):
     session: Entity = -1
 
 
@@ -978,7 +985,7 @@ class ZoneResetCmd:
 
 @dataclass_json
 @dataclass
-class Zone:
+class Zone(_Save):
     dir: Path = None
     legacy_builders: list[str] = field(default_factory=list)
     builders: list[Entity] = field(default_factory=list)
@@ -992,6 +999,7 @@ class Zone:
     max_level: int = 0
 
 
+@dataclass_json
 @dataclass
 class ZoneVnums(_NoSave):
     rooms: dict[Vnum, Entity] = field(default_factory=dict)

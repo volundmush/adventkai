@@ -21,5 +21,8 @@ LEGACY_ZONES = {}
 
 PLAYER_ID = {}
 
+COMPONENTS = {}
+
+
 MODIFIERS_NAMES = defaultdict(dict)
 MODIFIERS_ID = defaultdict(dict)

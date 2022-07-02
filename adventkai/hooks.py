@@ -14,7 +14,6 @@ def early_launch():
     django.setup()
 
 
-
 async def pre_start(entrypoint=None, services=None):
     mod_paths = mudforge.CONFIG.get("modifiers", list())
 
@@ -23,3 +22,8 @@ async def pre_start(entrypoint=None, services=None):
             modifier = v()
             adventkai.MODIFIERS_NAMES[modifier.category][str(modifier)] = modifier
             adventkai.MODIFIERS_ID[modifier.category][int(modifier)] = modifier
+
+    com_paths = mudforge.CONFIG.get("components", list())
+
+    for com_path in com_paths:
+        adventkai.COMPONENTS.update(callables_from_module(com_path))
