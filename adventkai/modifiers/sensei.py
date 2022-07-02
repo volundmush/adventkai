@@ -5,7 +5,7 @@ from adventkai.components import Physiology as _phys
 
 
 class _Sensei(_BaseMod):
-    category = "sensei"
+    category = "Sensei"
     mod_id = -1
     pc_ok = False
     abbr = "--"

@@ -5,6 +5,7 @@ import adventkai
 from .modules import Module
 from pathlib import Path
 from .legacy import LegacyLoader
+from adventkai.db.accounts.models import Account
 
 
 class GameService(OldGame):
@@ -33,8 +34,7 @@ class GameService(OldGame):
         for k, v in adventkai.MODULES.items():
             await v.load_prototypes()
 
-        sys_module = adventkai.MODULES["system"]
-        if not sys_module.save_path.exists() and legacy_loader:
+        if not Account.objects.count() and legacy_loader:
             logging.info("loading legacy player data...")
             await legacy_loader.load_userdata()
 

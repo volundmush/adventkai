@@ -4,7 +4,7 @@ from adventkai.components import Sizes
 
 
 class _Race(_BaseMod):
-    category = "race"
+    category = "Race"
     mod_id = -1
     pc_ok = True
     size = Sizes.MEDIUM

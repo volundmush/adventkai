@@ -3,7 +3,7 @@ from adventkai.typing import Entity
 
 
 class _Affect(_BaseMod):
-    category = "affects"
+    category = "AffectFlags"
     mod_id = -1
 
 

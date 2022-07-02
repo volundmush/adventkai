@@ -3,7 +3,7 @@ from adventkai.typing import Entity
 
 
 class _PreferenceFlag(_BaseMod):
-    category = "preference_flags"
+    category = "PreferenceFlags"
     mod_id = -1
 
 

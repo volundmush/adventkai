@@ -65,6 +65,7 @@ class EntityID(_Save):
     ent_id: str = ""
 
 
+@dataclass_json
 @dataclass
 class FlagBase(_Save):
     flags: dict[str, typing.Any] = field(default_factory=dict)
@@ -75,6 +76,18 @@ class FlagBase(_Save):
     def export(self):
         return list(self.flags.keys())
 
+    @classmethod
+    def deserialize(cls, data: typing.Any):
+        names = adventkai.MODIFIERS_NAMES[cls.__name__]
+        ids = adventkai.MODIFIERS_ID[cls.__name__]
+        o = cls()
+        for i in data:
+            if isinstance(i, int):
+                if (found := ids.get(i, None)):
+                    o.flags[str(found)] = found
+            elif isinstance(i, str):
+                if (found := names.get(i, None)):
+                    o.flags[str(found)] = found
 
 @dataclass
 class AffectFlags(FlagBase):
@@ -342,7 +355,6 @@ class Prototype(_Save):
     ids: set[str] = field(default_factory=set)
 
 
-
 @dataclass_json
 @dataclass
 class HasLegacyMobProto(_Save):
@@ -408,6 +420,15 @@ class Triggers(_Save):
     def should_save(self) -> bool:
         return bool(self.triggers)
 
+    @classmethod
+    def deserialize(cls, data: typing.Any):
+        o = cls()
+        for i in data:
+            o.triggers.append(i)
+        return o
+
+    def export(self):
+        return self.triggers
 
 @dataclass
 class DgScriptHolder(_Save):
@@ -567,21 +588,28 @@ class BankAccount(_Save):
 
 @dataclass_json
 @dataclass
-class Race(_Save):
-    race: "Race"
+class _SingleModifier(_Save):
+    modifier: "Modifier"
 
     def export(self):
-        return self.race.mod_id
+        return self.modifier.mod_id
 
     @classmethod
     def deserialize(cls, data: typing.Any):
-        if(isinstance(data, int)):
-            if (r := adventkai.MODIFIERS_ID["race"].get(data, None)):
-                return cls(race=r)
-        if(isinstance(data, str)):
-            if (r := adventkai.MODIFIERS_NAMES["race"].get(data, None)):
-                return cls(race=r)
-        raise Exception(f"Cannot locate race {data}")
+        names = adventkai.MODIFIERS_NAMES[cls.__name__]
+        ids = adventkai.MODIFIERS_ID[cls.__name__]
+        if (isinstance(data, int)):
+            if (r := ids.get(data, None)):
+                return cls(modifier=r)
+        if (isinstance(data, str)):
+            if (r := names.get(data, None)):
+                return cls(modifier=r)
+        raise Exception(f"Cannot locate {str(self)} {data}")
+
+@dataclass_json
+@dataclass
+class Race(_SingleModifier):
+    pass
 
 
 @dataclass_json
@@ -604,21 +632,8 @@ class Physiology(_Save):
 
 @dataclass_json
 @dataclass
-class Sensei(_Save):
-    sensei: "Sensei"
-
-    def export(self):
-        return self.sensei.mod_id
-
-    @classmethod
-    def deserialize(cls, data: typing.Any):
-        if (isinstance(data, int)):
-            if (r := adventkai.MODIFIERS_ID["sensei"].get(data, None)):
-                return cls(sensei=r)
-        if (isinstance(data, str)):
-            if (r := adventkai.MODIFIERS_NAMES["sensei"].get(data, None)):
-                return cls(sensei=r)
-        raise Exception(f"Cannot locate sensei {data}")
+class Sensei(_SingleModifier):
+    pass
 
 
 @dataclass_json
@@ -714,6 +729,10 @@ class StringBase(_Save):
     def export(self):
         return self.color
 
+    @classmethod
+    def deserialize(cls, data: typing.Any):
+        return cls(data)
+
 
 class Name(StringBase):
     pass
@@ -746,6 +765,14 @@ class ExDescriptions(_Save):
     def export(self):
         return [(key.export(), desc.export()) for (key, desc) in self.ex_descriptions]
 
+    @classmethod
+    def deserialize(cls, data: typing.Any):
+        o = cls()
+        for k, d in data:
+            o.ex_descriptions.append([Name(k), Description(d)])
+        return o
+
+
 
 @dataclass_json
 @dataclass
@@ -761,6 +788,12 @@ class ItemValues(_Save):
     def export(self):
         return {k: v for k, v in self.values.items() if v}
 
+    @classmethod
+    def deserialize(cls, data: typing.Any):
+        o = cls()
+        for k, v in data:
+            o.values[k] = v
+        return o
 
 @dataclass_json
 @dataclass
@@ -779,21 +812,8 @@ class AdminFlags(FlagBase):
 
 @dataclass_json
 @dataclass
-class ItemType:
-    type_flag: typing.Any
-
-    def export(self):
-        return self.type_flag.mod_id
-
-    @classmethod
-    def deserialize(cls, data: typing.Any):
-        if (isinstance(data, int)):
-            if (r := adventkai.MODIFIERS_ID["item_types"].get(data, None)):
-                return cls(type_flag=r)
-        if (isinstance(data, str)):
-            if (r := adventkai.MODIFIERS_NAMES["item_types"].get(data, None)):
-                return cls(type_flag=r)
-        raise Exception(f"Cannot locate Item Type {data}")
+class ItemType(_SingleModifier):
+    pass
 
 
 class WearFlags(FlagBase):
@@ -904,6 +924,26 @@ class Exits(_Save):
     def should_save(self) -> bool:
         return bool(self.exits)
 
+    @classmethod
+    def deserialize(cls, data: typing.Any):
+        o = cls()
+        for d, ex in data:
+            if not ex:
+                continue
+            e = RoomExit()
+
+            if "description" in ex:
+                e.description = Description(ex.pop("description"))
+            if "keyword" in ex:
+                e.keyword = Name(ex.pop("keyword"))
+
+            for f in ("exit_info", "key", "to_room", "fail_room", "total_fail_room", "dclock", "dchide", "dcskill", "dcmove", "failsavetype", "dcfailsave"):
+                if f in ex:
+                    setattr(e, f, ex.pop(f))
+
+            o.exits[ExitDir(d)] = e
+        return o
+
 
 @dataclass
 class RoomFlags(FlagBase):
@@ -921,21 +961,8 @@ class ItemFlags(FlagBase):
 
 
 @dataclass
-class SectorType:
-    sector: typing.Any
-
-    def export(self):
-        return self.sector.mod_id
-
-    @classmethod
-    def deserialize(cls, data: typing.Any):
-        if (isinstance(data, int)):
-            if (r := adventkai.MODIFIERS_ID["room_sectors"].get(data, None)):
-                return cls(sector=r)
-        if (isinstance(data, str)):
-            if (r := adventkai.MODIFIERS_NAMES["room_sectors"].get(data, None)):
-                return cls(sector=r)
-        raise Exception(f"Cannot locate Room Type {data}")
+class SectorType(_SingleModifier):
+    pass
 
 
 @dataclass
@@ -1008,3 +1035,26 @@ class ZoneVnums(_NoSave):
     triggers: dict[Vnum, Entity] = field(default_factory=dict)
     shops: dict[Vnum, Entity] = field(default_factory=dict)
     guilds: dict[Vnum, Entity] = field(default_factory=dict)
+
+
+@dataclass_json
+@dataclass
+class Price(_Save):
+    price: int = 0
+    price_per_day: int = 0
+
+    def should_save(self) -> bool:
+        return bool(self.price or self.price_per_day)
+
+
+@dataclass_json
+@dataclass
+class DupeCheck(_Save):
+    generation: int = 0
+    unique_id: int = 0
+
+
+@dataclass_json
+@dataclass
+class DGScriptID(_Save):
+    script_id: int = 0

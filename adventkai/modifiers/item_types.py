@@ -3,7 +3,7 @@ from adventkai.typing import Entity
 
 
 class _ItemType(_BaseMod):
-    category = "item_types"
+    category = "ItemType"
     mod_id = -1
 
 

@@ -3,7 +3,7 @@ from adventkai.typing import Entity
 
 
 class _PlayerFlag(_BaseMod):
-    category = "player_flags"
+    category = "PlayerFlags"
     mod_id = -1
 
 

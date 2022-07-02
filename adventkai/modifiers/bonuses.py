@@ -3,7 +3,7 @@ from adventkai.typing import Entity
 
 
 class _Bonus(_BaseMod):
-    category = "bonuses"
+    category = "Bonuses"
     mod_id = -1
     cost = 0
     description = ""

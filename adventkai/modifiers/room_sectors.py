@@ -3,7 +3,7 @@ from adventkai.typing import Entity
 
 
 class _RoomSector(_BaseMod):
-    category = "room_sectors"
+    category = "SectorType"
     mod_id = -1
 
 
