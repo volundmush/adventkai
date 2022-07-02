@@ -156,6 +156,22 @@ class Android(_Save):
     upgrades: int = 0
     model: AndroidType = AndroidType.ABSORB
 
+    def export(self):
+        data = {}
+        if self.upgrades:
+            data["upgrades"] = self.upgrades
+        if self.model != AndroidType.ABSORB:
+            data["model"] = int(self.model)
+
+    @classmethod
+    def deserialize(cls, data: typing.Any):
+        o = cls()
+        if "upgrades" in data:
+            o.upgrades = data.pop("upgrades")
+        if "model" in data:
+            o.model = AndroidType(data.pop("model"))
+        return o
+
 
 @dataclass_json
 @dataclass
@@ -274,7 +290,7 @@ class Frozen(_Save):
 @dataclass_json
 @dataclass
 class AccountOwner(_Save):
-    account: int = 0
+    account_id: int = 0
 
 
 @dataclass_json
@@ -346,6 +362,27 @@ class Physics(_Save):
 
     def should_save(self) -> bool:
         return bool(self.weight or self.height or self.size != Sizes.UNDEFINED)
+
+
+    def export(self):
+        data = {}
+        if self.weight:
+            data["weight"] = self.weight
+        if self.height:
+            data["height"] = self.height
+        if self.size != Sizes.UNDEFINED:
+            data["size"] = int(self.size)
+        return data
+
+    @classmethod
+    def deserialize(cls, data: typing.Any):
+        o = cls()
+        for f in ("weight", "height"):
+            if f in data:
+                setattr(o, f, data.pop(f))
+        if "size" in data:
+            o.size = Sizes(data.pop("size"))
+        return o
 
 
 @dataclass_json
@@ -459,6 +496,7 @@ class Equipment(_NoSave):
 @dataclass
 class SaveInRoom(EntityID):
     vnum: Vnum = -1
+    coordinates: GridCoordinates = field(default_factory=lambda: [0, 0, 0])
 
 
 @dataclass_json
@@ -666,6 +704,15 @@ class HasSkills(_Save):
         if skill_data:
             data["skills"] = skill_data
         return data
+
+    @classmethod
+    def deserialize(cls, data: typing.Any):
+        o = cls()
+        if "skill_slots" in data:
+            o.skill_spots = data.pop("skill_slots")
+        if "skills" in data:
+            for k, v in data.pop("skills"):
+                o.skills[k] = Skill.from_dict(v)
 
 
 @dataclass_json
@@ -923,6 +970,9 @@ class Exits(_Save):
 
     def should_save(self) -> bool:
         return bool(self.exits)
+
+    def export(self):
+        return {int(k): v.to_dict() for k, v in self.exits.items()}
 
     @classmethod
     def deserialize(cls, data: typing.Any):

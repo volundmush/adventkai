@@ -1,11 +1,30 @@
 import os
 import importlib
 import logging
+from pathlib import Path
 from inspect import ismodule, trace, getmembers, getmodule, getmro
 import types
 from adventkai import WORLD
 from .typing import Vnum, Entity, GridCoordinates, SpaceCoordinates
 import typing
+import orjson
+from ruamel.yaml import YAML
+
+_Y = YAML(typ="safe")
+
+
+def read_json_file(p: Path):
+    return orjson.loads(open(p, mode='rb').read())
+
+def read_yaml_file(p: Path):
+    return _Y.load(open(p, mode="r"))
+
+def read_data_file(p: Path):
+    if p.name.lower().endswith(".json"):
+        return read_json_file(p)
+    elif p.name.lower().endswith(".yaml"):
+        return read_yaml_file(p)
+    return None
 
 
 def get_or_emplace(ent: Entity, component: typing.Type) -> typing.Any:

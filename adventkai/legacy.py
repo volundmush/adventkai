@@ -1,6 +1,4 @@
 from pathlib import Path
-import orjson
-import mudforge
 import adventkai
 import logging
 from adventkai import WORLD
@@ -8,13 +6,10 @@ from mudforge import NET_CONNECTIONS
 from .utils import get_or_emplace
 from adventkai import components as cm
 import asyncio
-from adventkai.serialize import serialize_entity, deserialize_entity
-
+from adventkai.serialize import deserialize_entity, save_entity
+from adventkai import api
 from adventkai.db.accounts.models import Account
-
-
-def _read_json(p: Path):
-    return orjson.loads(open(p, mode='rb').read())
+from adventkai.utils import read_json_file
 
 
 async def _broadcast(s: str):
@@ -27,6 +22,9 @@ class LegacyLoader:
     def __init__(self, p: Path):
         self.path = p
         self.account_map = dict()
+        self.system = adventkai.MODULES["system"]
+        self.legacy = adventkai.MODULES["legacy"]
+        self.created_entities = set()
 
     async def load_assets(self):
         logging.info("Loading Legacy Zones...")
@@ -64,7 +62,7 @@ class LegacyLoader:
             zf_dir = d / "zone.json"
             if not (zf_dir.exists() and zf_dir.is_file()):
                 continue
-            if not (j := _read_json(zf_dir)):
+            if not (j := read_json_file(zf_dir)):
                 continue
 
             ent = deserialize_entity(j)
@@ -82,7 +80,7 @@ class LegacyLoader:
             tf_dir = z.dir / "triggers.json"
             if not (tf_dir.exists() and tf_dir.is_file()):
                 continue
-            for j in _read_json(tf_dir):
+            for j in read_json_file(tf_dir):
                 ent = deserialize_entity(j)
                 vcomp = WORLD.component_for_entity(ent, cm.HasVnum)
                 vn = vcomp.vnum
@@ -113,7 +111,7 @@ class LegacyLoader:
             rf_dir = z.dir / "rooms.json"
             if not (rf_dir.exists() and rf_dir.is_file()):
                 continue
-            rj = _read_json(rf_dir)
+            rj = read_json_file(rf_dir)
             num_rooms = len(rj)
             logging.info(f"Loading Zone {znum+1} of {zone_total} - ({k}): {zn} ({num_rooms} rooms)")
             await _broadcast(f"Loading {num_rooms} rooms from Zone {znum+1} of {zone_total}...")
@@ -135,7 +133,7 @@ class LegacyLoader:
             of_dir = z.dir / "objects.json"
             if not (of_dir.exists() and of_dir.is_file()):
                 continue
-            for j in _read_json(of_dir):
+            for j in read_json_file(of_dir):
                 ent = deserialize_entity(j)
                 vcomp = WORLD.component_for_entity(ent, cm.HasVnum)
                 vn = vcomp.vnum
@@ -151,7 +149,7 @@ class LegacyLoader:
             of_dir = z.dir / "mobiles.json"
             if not (of_dir.exists() and of_dir.is_file()):
                 continue
-            for j in _read_json(of_dir):
+            for j in read_json_file(of_dir):
                 ent = deserialize_entity(j)
                 vcomp = WORLD.component_for_entity(ent, cm.HasVnum)
                 vn = vcomp.vnum
@@ -164,14 +162,25 @@ class LegacyLoader:
         await self.load_accounts()
         count = Account.objects.count()
         logging.info(f"Loaded {count} Legacy Accounts from Files!")
-        await _broadcast(f"Loading {count} Legacy Accounts!")
+        await _broadcast(f"Loaded {count} Legacy Accounts!")
+
+        logging.info("Loading Legacy Player Characters...")
+        await self.load_player_characters()
+        count = len(WORLD.get_component(cm.PlayerCharacter))
+        logging.info(f"Loaded {count} Legacy Player Characters from Files!")
+        await _broadcast(f"Loaded {count} Legacy Player characters!")
+
+        logging.info("Saving converted User data...")
+        await self.save_userdata()
+        logging.info("Saved all User Data complete!")
+
 
     async def load_accounts(self):
         a_dir = self.path / "accounts"
 
         for d in [d for d in a_dir.iterdir() if d.is_file()]:
             await asyncio.sleep(0)
-            if not (j := _read_json(d)):
+            if not (j := read_json_file(d)):
                 continue
             acc = Account.objects.create_user(j.pop("name"), email=j.pop("email", None), password=j.pop("password", None))
             logging.info(f"Loading Legacy User: {acc.username}")
@@ -180,20 +189,49 @@ class LegacyLoader:
                 acc.save()
             self.account_map[j.pop("account_id")] = acc
 
+    def _load_contents(self, data, holder):
+        for i in data:
+            ent = deserialize_entity(i)
+            self.created_entities.add(ent)
+            self.legacy.assign_id(ent, "obj")
+            WORLD.add_component(ent, cm.IsPersistent())
+            api.add_to_inventory(ent, holder)
+            if "contents" in i:
+                self._load_contents(i.pop("contents"), ent)
+
 
     async def load_player_characters(self):
         c_dir = self.path / "characters"
-
+        count = 0
         for d in [d for d in c_dir.iterdir() if d.is_file()]:
             await asyncio.sleep(0)
-            if not (j := _read_json(d)):
+            if not (j := read_json_file(d)):
                 continue
             acc_id = j["player_specials"].pop("account_id")
             acc = self.account_map[acc_id]
             ent = deserialize_entity(j)
-            p_id = WORLD.component_for_entity(ent, cm.PlayerCharacter)
-            player_id = p_id.player_id
-            adventkai.PLAYER_ID[player_id] = ent
+            new_id = self.system.assign_id(ent, "pc")
+            WORLD.add_component(ent, cm.IsPersistent())
+            WORLD.add_component(ent, cm.AccountOwner(account_id=acc.id))
+            self.created_entities.add(ent)
             self._load_vars(ent, j)
 
+            if "carrying" in j:
+                self._load_contents(j.pop("carrying"), ent)
 
+            for k, v in j.pop("equipment", list()):
+                eq_ent = deserialize_entity(v)
+                self.created_entities.add(eq_ent)
+                self.legacy.assign_id(eq_ent, "obj")
+                api.equip_to_entity(eq_ent, ent, k)
+                WORLD.add_component(eq_ent, cm.IsPersistent())
+                if "contents" in v:
+                    self._load_contents(v.pop("contents"), eq_ent)
+
+    async def save_userdata(self):
+        for ent, pers in WORLD.get_component(cm.IsPersistent):
+            en = save_entity(ent)
+
+            if (ao := WORLD.try_component(ent, cm.AccountOwner)):
+                acc = Account.objects.get(id=ao.account_id)
+                acc.characters.add(en)

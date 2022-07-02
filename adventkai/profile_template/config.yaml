@@ -39,7 +39,7 @@ website:
 # Classes used by the game for various purposes. Add your own!
 classes:
   telnet_protocol: "mudforge.net.telnet.TelnetMudConnection"
-  game_connection: "mudforge.net.game_conn.GameConnection"
+  game_connection: "adventkai.connection.GameConnection"
 
 # Services launched when the game boots.
 services:

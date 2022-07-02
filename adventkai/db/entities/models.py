@@ -1,4 +1,5 @@
 from django.db import models
+from yamlfield.fields import YAMLField
 
 
 class Module(models.Model):
@@ -16,8 +17,7 @@ class Prototype(models.Model):
 class Entity(models.Model):
     prototype = models.ForeignKey(Prototype, related_name="entities", on_delete=models.PROTECT)
     ent_id = models.CharField(max_length=40, blank=False, null=False)
-    data = models.JSONField(null=False, blank=False)
-    owner = models.ForeignKey("self", null=True, on_delete=models.PROTECT, related_name="owned_entities")
+    data = YAMLField(null=False, blank=False)
 
     class Meta:
         unique_together = (("prototype", "ent_id"),)
