@@ -23,6 +23,7 @@ PLAYER_ID = {}
 
 COMPONENTS = {}
 
+TEXT_FILES = {}
 
 MODIFIERS_NAMES = defaultdict(dict)
 MODIFIERS_ID = defaultdict(dict)

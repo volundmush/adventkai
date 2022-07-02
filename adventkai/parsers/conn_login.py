@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from adventkai.exceptions import CommandError
 from .conn_base import ConnParser
 from django.core.validators import EmailValidator
+import adventkai
 
 _email_valid = EmailValidator()
 
@@ -34,8 +35,8 @@ class LoginParser(ConnParser):
         }
 
     async def start(self):
-        await self.send("GREETINGS! BIG LOGO HERE!")
-        await self.send("\r\n@cEnter your desired username or the username you have already made.\r\n@CEnter Username:")
+        await self.send_circle(adventkai.TEXT_FILES["greetansi"])
+        await self.send_circle("\r\n@cEnter your desired username or the username you have already made.\r\n@CEnter Username:")
         self.user_data.clear()
         self.account = None
         self.state = LoginState.NAME

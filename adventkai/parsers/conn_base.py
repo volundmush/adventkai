@@ -7,7 +7,7 @@ class ConnParser:
         self.conn = conn
 
     async def send(self, s: str):
-        await self.conn.send_ev(s)
+        await self.send_ev(s)
 
     async def send_ev(self, s):
         await self.conn.send_line(EvenniaToRich(s))

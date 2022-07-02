@@ -72,3 +72,9 @@ hooks:
 # python modules to auto-load Components from.
 components:
   - "adventkai.components"
+
+text_files:
+  greetansi: "legacy/text/greetansi"
+  greetings: "legacy/text/greetings"
+  motd: "legacy/text/motd"
+  wizlist: "legacy/text/wizlist"

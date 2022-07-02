@@ -27,3 +27,8 @@ async def pre_start(entrypoint=None, services=None):
 
     for com_path in com_paths:
         adventkai.COMPONENTS.update(callables_from_module(com_path))
+
+    txt_paths = mudforge.CONFIG.get("text_files", dict())
+
+    for k, v in txt_paths.items():
+        adventkai.TEXT_FILES[k] = open(v, mode="r").read()
