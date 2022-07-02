@@ -7,8 +7,11 @@ class _Race(_BaseMod):
     category = "Race"
     mod_id = -1
     pc_ok = True
+    mimic_ok = True
+    seeming_ok = True
     size = Sizes.MEDIUM
     abbr = "--"
+    has_seeming = False
 
     def rpp_cost(self, ent: Entity) -> int:
         return 0
@@ -60,11 +63,13 @@ class Halfbreed(_Race):
 class BioAndroid(_Race):
     mod_id = 8
     abbr = "Bio"
+    seeming_ok = False
 
 
 class Android(_Race):
     mod_id = 9
     abbr = "And"
+    has_seeming = True
 
 
 class Demon(_Race):
@@ -91,6 +96,8 @@ class Tuffle(_Race):
 class Hoshijin(_Race):
     mod_id = 14
     abbr = "Hos"
+    mimic_ok = False
+    seeming_ok = False
 
 
 class Arlian(_Race):
@@ -100,6 +107,8 @@ class Arlian(_Race):
 
 class _NPC(_Race):
     pc_ok = False
+    mimic_ok = False
+    seeming_ok = False
 
 
 class Animal(_NPC):

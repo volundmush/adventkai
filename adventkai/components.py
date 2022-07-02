@@ -144,33 +144,15 @@ class Molt(_Save):
         return bool(self.molt_exp or self.molt_level)
 
 
-class AndroidType(IntEnum):
-    ABSORB = 0
-    REPAIR = 1
-    SENSE = 2
 
 
 @dataclass_json
 @dataclass
-class Android(_Save):
+class Upgrades(_Save):
     upgrades: int = 0
-    model: AndroidType = AndroidType.ABSORB
 
-    def export(self):
-        data = {}
-        if self.upgrades:
-            data["upgrades"] = self.upgrades
-        if self.model != AndroidType.ABSORB:
-            data["model"] = int(self.model)
-
-    @classmethod
-    def deserialize(cls, data: typing.Any):
-        o = cls()
-        if "upgrades" in data:
-            o.upgrades = data.pop("upgrades")
-        if "model" in data:
-            o.model = AndroidType(data.pop("model"))
-        return o
+    def should_save(self) -> bool:
+        return bool(self.upgrades)
 
 
 @dataclass_json
@@ -644,6 +626,7 @@ class _SingleModifier(_Save):
                 return cls(modifier=r)
         raise Exception(f"Cannot locate {str(self)} {data}")
 
+
 @dataclass_json
 @dataclass
 class Race(_SingleModifier):
@@ -652,20 +635,71 @@ class Race(_SingleModifier):
 
 @dataclass_json
 @dataclass
+class AndroidType(_SingleModifier):
+    pass
+
+
+@dataclass_json
+@dataclass
+class Seeming(_Save):
+    seeming: str
+
+
+@dataclass_json
+@dataclass
+class Hair(_Save):
+    length: int = 0
+    style: int = 0
+    color: int = 0
+
+
+@dataclass_json
+@dataclass
+class Antennae(_Save):
+    length: int = 0
+    style: int = 0
+    color: int = 0
+
+
+@dataclass_json
+@dataclass
+class Forelock(_Save):
+    length: int = 0
+    style: int = 0
+    color: int = 0
+
+
+@dataclass_json
+@dataclass
+class Horns(_Save):
+    length: int = 0
+    style: int = 0
+    color: int = 0
+
+
+@dataclass_json
+@dataclass
 class Physiology(_Save):
     sex: int = 0
-    hair_length: int = 0
-    hair_style: int = 0
-    hair_color: int = 0
     skin_color: int = 0
     eye_color: int = 0
-    distinguishing_feature: int = 0
     aura_color: int = 0
-    racial_pref: int = 0
+    distinguishing_feature: int = 0
 
     def should_save(self) -> bool:
-        return bool(self.sex or self.hair_color or self.hair_length or self.hair_style or self.skin_color
-                    or self.eye_color or self.distinguishing_feature or self.aura_color or self.racial_pref)
+        return bool(self.sex or self.skin_color or self.eye_color or self.distinguishing_feature or self.aura_color)
+
+
+@dataclass_json
+@dataclass
+class Genomes(FlagBase):
+    pass
+
+
+@dataclass_json
+@dataclass
+class Mutations(FlagBase):
+    pass
 
 
 @dataclass_json
@@ -833,7 +867,7 @@ class ItemValues(_Save):
         return False
 
     def export(self):
-        return {k: v for k, v in self.values.items() if v}
+        return [[k, v] for k, v in self.values.items() if v]
 
     @classmethod
     def deserialize(cls, data: typing.Any):

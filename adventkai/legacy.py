@@ -12,9 +12,9 @@ from adventkai.db.accounts.models import Account
 from adventkai.utils import read_json_file
 
 
-async def _broadcast(s: str):
+def _broadcast(s: str):
     for k, v in NET_CONNECTIONS.items():
-        await v.send_line(s)
+        v.send_line(s)
 
 
 class LegacyLoader:
@@ -30,27 +30,27 @@ class LegacyLoader:
         logging.info("Loading Legacy Zones...")
         await self.load_zones()
         logging.info(f"Loaded {len(adventkai.LEGACY_ZONES)} Legacy Zones from Files!")
-        await _broadcast(f"Loading {len(adventkai.LEGACY_ZONES)} Legacy Zones!")
+        _broadcast(f"Loading {len(adventkai.LEGACY_ZONES)} Legacy Zones!")
 
         logging.info("Loading Legacy Triggers...")
         await self.load_triggers()
         logging.info(f"Loaded {len(adventkai.LEGACY_TRIGGERS)} Legacy Triggers from Files!")
-        await _broadcast(f"Loaded {len(adventkai.LEGACY_TRIGGERS)} Legacy Scripts!")
+        _broadcast(f"Loaded {len(adventkai.LEGACY_TRIGGERS)} Legacy Scripts!")
 
         logging.info("Loading Legacy Rooms...")
         await self.load_rooms()
         logging.info(f"Loaded {len(adventkai.LEGACY_ROOMS)} Legacy Rooms from Files!")
-        await _broadcast(f"Loaded {len(adventkai.LEGACY_ROOMS)} Legacy Rooms!")
+        _broadcast(f"Loaded {len(adventkai.LEGACY_ROOMS)} Legacy Rooms!")
 
         logging.info("Loading Legacy Objects...")
         await self.load_objects()
         logging.info(f"Loaded {len(adventkai.LEGACY_OBJECTS)} Legacy Objects from Files!")
-        await _broadcast(f"Loaded {len(adventkai.LEGACY_OBJECTS)} Legacy Items!")
+        _broadcast(f"Loaded {len(adventkai.LEGACY_OBJECTS)} Legacy Items!")
 
         logging.info("Loading Legacy Mobiles...")
         await self.load_mobiles()
         logging.info(f"Loaded {len(adventkai.LEGACY_MOBILES)} Legacy Mobiles from Files!")
-        await _broadcast(f"Loaded {len(adventkai.LEGACY_MOBILES)} Legacy NPCs!")
+        _broadcast(f"Loaded {len(adventkai.LEGACY_MOBILES)} Legacy NPCs!")
 
         # TODO: Shops and guilds
 
@@ -114,7 +114,7 @@ class LegacyLoader:
             rj = read_json_file(rf_dir)
             num_rooms = len(rj)
             logging.info(f"Loading Zone {znum+1} of {zone_total} - ({k}): {zn} ({num_rooms} rooms)")
-            await _broadcast(f"Loading {num_rooms} rooms from Zone {znum+1} of {zone_total}...")
+            _broadcast(f"Loading {num_rooms} rooms from Zone {znum+1} of {zone_total}...")
             for num, j in enumerate(rj):
 
                 ent = deserialize_entity(j)
@@ -162,13 +162,13 @@ class LegacyLoader:
         await self.load_accounts()
         count = Account.objects.count()
         logging.info(f"Loaded {count} Legacy Accounts from Files!")
-        await _broadcast(f"Loaded {count} Legacy Accounts!")
+        _broadcast(f"Loaded {count} Legacy Accounts!")
 
         logging.info("Loading Legacy Player Characters...")
         await self.load_player_characters()
         count = len(WORLD.get_component(cm.PlayerCharacter))
         logging.info(f"Loaded {count} Legacy Player Characters from Files!")
-        await _broadcast(f"Loaded {count} Legacy Player characters!")
+        _broadcast(f"Loaded {count} Legacy Player characters!")
 
         logging.info("Saving converted User data...")
         await self.save_userdata()
@@ -184,9 +184,18 @@ class LegacyLoader:
                 continue
             acc = Account.objects.create_user(j.pop("name"), email=j.pop("email", None), password=j.pop("password", None))
             logging.info(f"Loading Legacy User: {acc.username}")
+
             if acc.username in ("Wayland", "Virtus", "Volund"):
                 acc.is_superuser = True
-                acc.save()
+
+            if "current_rpp" in j:
+                acc.rpp_current = j.pop("current_rpp")
+            if "earned_rpp" in j:
+                acc.rpp_total = j.pop("earned_rpp")
+            if "max_slots" in j:
+                acc.max_slots = j.pop("max_slots")
+
+            acc.save()
             self.account_map[j.pop("account_id")] = acc
 
     def _load_contents(self, data, holder):

@@ -64,6 +64,9 @@ modifiers:
   - "adventkai.modifiers.sensei"
   - "adventkai.modifiers.wear_flags"
   - "adventkai.modifiers.zone_flags"
+  - "adventkai.modifiers.genomes"
+  - "adventkai.modifiers.mutations"
+  - "adventkai.modifiers.android"
 
 hooks:
   pre_start: "adventkai.hooks.pre_start"

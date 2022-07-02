@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+import asyncio
 from adventkai.db.entities.models import Module as ModDB, Prototype as ProtDB, Entity as EntDB
 from adventkai.typing import Entity
 from mudforge.utils import generate_name
@@ -7,6 +8,7 @@ from adventkai import components as cm
 from adventkai.utils import read_data_file
 from adventkai.serialize import deserialize_entity
 from adventkai import WORLD
+import adventkai
 
 
 class Module:
@@ -19,8 +21,6 @@ class Module:
         self.path = path
         self.save_path = save_path
         m, created = ModDB.objects.get_or_create(name=self.name)
-        if created:
-            m.save()
 
     def __str__(self):
         return self.name
@@ -61,6 +61,8 @@ class Module:
         if not p_dir.is_dir():
             return
 
+        m = ModDB.objects.get(name=self.name)
+
         for d in [d for d in p_dir.iterdir() if d.is_file()]:
             key, ext = d.name.split(".", 1)
             data = read_data_file(d)
@@ -69,10 +71,21 @@ class Module:
             p_ent = deserialize_entity(data)
             WORLD.add_component(p_ent, cm.Prototype(name=key))
             self.prototypes[key] = p_ent
+            p_row, created = ProtDB.objects.get_or_create(module=m, name=key)
 
 
     async def load_entities_initial(self):
-        pass
+        for row in EntDB.objects.filter(prototype__module__name=self.name):
+            await asyncio.sleep(0)
+            p_ent = self.prototypes[row.prototype.name]
+            prot = WORLD.component_for_entity(p_ent, cm.Prototype)
+            ent_id = row.ent_id
+            prot.ids.add(ent_id)
+            ent = deserialize_entity(row.data)
+            self.entities[ent_id] = ent
+
+            if pc := WORLD.try_component(ent, cm.PlayerCharacter):
+                adventkai.PLAYER_ID[pc.player_id] = ent
 
 
     async def load_entities_finalize(self):

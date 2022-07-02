@@ -38,11 +38,15 @@ class GameService(OldGame):
             logging.info("loading legacy player data...")
             await legacy_loader.load_userdata()
 
+        logging.info("Performing initial entity load from database.")
         for k, v in adventkai.MODULES.items():
             await v.load_entities_initial()
+        logging.info("Finished initial entity load.")
 
+        logging.info("Finalizing load of entities...")
         for k, v in adventkai.MODULES.items():
             await v.load_entities_finalize()
+        logging.info("Finished load!")
 
     async def game_loop(self):
         pass

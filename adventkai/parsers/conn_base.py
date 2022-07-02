@@ -6,14 +6,16 @@ class ConnParser:
     def __init__(self, conn):
         self.conn = conn
 
-    async def send(self, s: str):
-        await self.send_ev(s)
+    def send(self, s: str):
+        self.conn.send_line(s)
 
-    async def send_ev(self, s):
-        await self.conn.send_line(EvenniaToRich(s))
+    def send_ev(self, s):
+        self.conn.send_line(EvenniaToRich(s))
 
-    async def send_circle(self, s):
-        await self.conn.send_line(CircleToRich(s))
+    def send_circle(self, s):
+        self.conn.send_line(CircleToRich(s))
+
+
 
     async def start(self):
         pass
