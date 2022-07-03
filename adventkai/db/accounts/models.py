@@ -50,8 +50,6 @@ class Account(AbstractBaseUser, PermissionsMixin):
 
     date_joined = models.DateTimeField(_("date joined"), default=timezone.now)
 
-    characters = models.ManyToManyField("entities.Entity", related_name="account_owners")
-
     rpp_current = models.PositiveIntegerField(_("roleplay points"), null=False, blank=False, default=0)
     rpp_total = models.PositiveIntegerField(_("roleplay total"), null=False, blank=False, default=0)
     max_slots = models.PositiveIntegerField(_("character slots"), null=False, blank=False, default=3)

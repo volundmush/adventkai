@@ -9,6 +9,7 @@ import sys
 from mudforge.utils import lazy_property
 from mudrich.circle import CircleToRich, CircleStrip
 import adventkai
+from adventkai.serialize import deserialize_entity, serialize_entity
 
 from .typing import Vnum, Entity, GridCoordinates, SpaceCoordinates
 
@@ -27,7 +28,7 @@ class _Save:
         return self.to_dict()
 
     @classmethod
-    def deserialize(cls, data: typing.Any):
+    def deserialize(cls, data: typing.Any, ent: Entity):
         return cls.from_dict(data)
 
 
@@ -77,7 +78,7 @@ class FlagBase(_Save):
         return list(self.flags.keys())
 
     @classmethod
-    def deserialize(cls, data: typing.Any):
+    def deserialize(cls, data: typing.Any, ent):
         names = adventkai.MODIFIERS_NAMES[cls.__name__]
         ids = adventkai.MODIFIERS_ID[cls.__name__]
         o = cls()
@@ -226,7 +227,7 @@ class TransCost(_Save):
         return bool(self.transcost)
 
     @classmethod
-    def deserialize(cls, data: typing.Any):
+    def deserialize(cls, data: typing.Any, ent):
         c = cls()
         for i in data:
             c.transcost.add(i)
@@ -357,7 +358,7 @@ class Physics(_Save):
         return data
 
     @classmethod
-    def deserialize(cls, data: typing.Any):
+    def deserialize(cls, data: typing.Any, ent):
         o = cls()
         for f in ("weight", "height"):
             if f in data:
@@ -440,7 +441,7 @@ class Triggers(_Save):
         return bool(self.triggers)
 
     @classmethod
-    def deserialize(cls, data: typing.Any):
+    def deserialize(cls, data: typing.Any, ent):
         o = cls()
         for i in data:
             o.triggers.append(i)
@@ -464,15 +465,57 @@ class DgScriptHolder(_Save):
 
 @dataclass_json
 @dataclass
-class Inventory(_NoSave):
-    inventory: list[Entity] = field(default_factory=list)
+class InInventory(_NoSave):
+    holder: Entity = -1
 
 
 @dataclass_json
 @dataclass
-class Equipment(_NoSave):
+class Equipped(_NoSave):
+    holder: Entity = -1
+    slot: int = -1
+
+
+@dataclass_json
+@dataclass
+class Inventory(_Save):
+    inventory: list[Entity] = field(default_factory=list)
+
+    def should_save(self) -> bool:
+        return bool(self.inventory)
+
+    def export(self):
+        return [serialize_entity(e) for e in self.inventory]
+
+    @classmethod
+    def deserialize(cls, data: typing.Any, ent: Entity):
+        o = cls()
+        for d in data:
+            e = deserialize_entity(d)
+            adventkai.WORLD.add_component(e, InInventory(holder=ent))
+            o.inventory.append(e)
+        return o
+
+
+@dataclass_json
+@dataclass
+class Equipment(_Save):
     equipment: dict[int, Entity] = field(default_factory=dict)
 
+    def should_save(self) -> bool:
+        return bool(self.equipment)
+
+    def export(self):
+        return {k: serialize_entity(v) for k, v in self.equipment.items()}
+
+    @classmethod
+    def deserialize(cls, data: typing.Any, ent: Entity):
+        o = cls()
+        for k, v in data.items():
+            e = deserialize_entity(v)
+            adventkai.WORLD.add_component(e, Equipped(holder=ent, slot=k))
+            o.equipment[k] = e
+        return o
 
 @dataclass_json
 @dataclass
@@ -502,52 +545,7 @@ class InRoom(_Save):
         return data
 
 
-@dataclass_json
-@dataclass
-class SaveInInventory(EntityID):
-    pass
 
-
-@dataclass_json
-@dataclass
-class InInventory(_Save):
-    holder: Entity = -1
-
-    def should_save(self) -> bool:
-        return adventkai.WORLD.entity_exists(self.holder)
-
-    def save_name(self) -> str:
-        return "SaveInInventory"
-
-    def export(self):
-        ent_data = adventkai.WORLD.try_component(self.holder, EntityID)
-        if ent_data:
-            return ent_data.to_dict()
-
-
-@dataclass_json
-@dataclass
-class SaveEquipped(EntityID):
-    slot: int = -1
-
-
-@dataclass_json
-@dataclass
-class Equipped(_Save):
-    holder: Entity = -1
-    slot: int = -1
-
-    def should_save(self) -> bool:
-        return adventkai.WORLD.entity_exists(self.holder)
-
-    def save_name(self) -> str:
-        return "SaveEquipped"
-
-    def export(self):
-        if (ent_data := adventkai.WORLD.try_component(self.holder, EntityID)):
-            data = ent_data.to_dict()
-            data["slot"] = self.slot
-            return data
 
 
 class PointHolder:
@@ -615,7 +613,7 @@ class _SingleModifier(_Save):
         return self.modifier.mod_id
 
     @classmethod
-    def deserialize(cls, data: typing.Any):
+    def deserialize(cls, data: typing.Any, ent):
         names = adventkai.MODIFIERS_NAMES[cls.__name__]
         ids = adventkai.MODIFIERS_ID[cls.__name__]
         if (isinstance(data, int)):
@@ -740,7 +738,7 @@ class HasSkills(_Save):
         return data
 
     @classmethod
-    def deserialize(cls, data: typing.Any):
+    def deserialize(cls, data: typing.Any, ent):
         o = cls()
         if "skill_slots" in data:
             o.skill_spots = data.pop("skill_slots")
@@ -784,7 +782,7 @@ class StringBase(_Save):
     rich_cache = dict()
 
     def should_save(self) -> bool:
-        return bool(self.rich.plain)
+        return bool(self.plain)
 
     def __init__(self, s: str):
         self.color = sys.intern(s)
@@ -792,6 +790,10 @@ class StringBase(_Save):
             self.rich_cache[self.color] = CircleToRich(s)
 
     def __str__(self):
+        return self.plain
+
+    @property
+    def plain(self):
         return self.rich.plain
 
     @lazy_property
@@ -811,7 +813,7 @@ class StringBase(_Save):
         return self.color
 
     @classmethod
-    def deserialize(cls, data: typing.Any):
+    def deserialize(cls, data: typing.Any, ent):
         return cls(data)
 
 
@@ -847,7 +849,7 @@ class ExDescriptions(_Save):
         return [(key.export(), desc.export()) for (key, desc) in self.ex_descriptions]
 
     @classmethod
-    def deserialize(cls, data: typing.Any):
+    def deserialize(cls, data: typing.Any, ent):
         o = cls()
         for k, d in data:
             o.ex_descriptions.append([Name(k), Description(d)])
@@ -870,7 +872,7 @@ class ItemValues(_Save):
         return [[k, v] for k, v in self.values.items() if v]
 
     @classmethod
-    def deserialize(cls, data: typing.Any):
+    def deserialize(cls, data: typing.Any, ent):
         o = cls()
         for k, v in data:
             o.values[k] = v
@@ -1009,7 +1011,7 @@ class Exits(_Save):
         return {int(k): v.to_dict() for k, v in self.exits.items()}
 
     @classmethod
-    def deserialize(cls, data: typing.Any):
+    def deserialize(cls, data: typing.Any, ent):
         o = cls()
         for d, ex in data:
             if not ex:

@@ -6,7 +6,7 @@ from mudforge import NET_CONNECTIONS
 from .utils import get_or_emplace
 from adventkai import components as cm
 import asyncio
-from adventkai.serialize import deserialize_entity, save_entity
+from adventkai.serialize import deserialize_entity, serialize_entity
 from adventkai import api
 from adventkai.db.accounts.models import Account
 from adventkai.utils import read_json_file
@@ -124,7 +124,6 @@ class LegacyLoader:
                 adventkai.LEGACY_ROOMS[vn] = ent
                 self._load_vars(ent, j)
 
-
     async def load_objects(self):
         for k, v in adventkai.LEGACY_ZONES.items():
             await asyncio.sleep(0)
@@ -174,6 +173,11 @@ class LegacyLoader:
         await self.save_userdata()
         logging.info("Saved all User Data complete!")
 
+        logging.info("Unloading userdata...")
+        for e in self.created_entities:
+            WORLD.delete_entity(e, immediate=True)
+        self.created_entities.clear()
+        logging.info("Entities removed from world...")
 
     async def load_accounts(self):
         a_dir = self.path / "accounts"
@@ -202,8 +206,7 @@ class LegacyLoader:
         for i in data:
             ent = deserialize_entity(i)
             self.created_entities.add(ent)
-            self.legacy.assign_id(ent, "obj")
-            WORLD.add_component(ent, cm.IsPersistent())
+            self.legacy.assign_id(ent, "obj", index=False)
             api.add_to_inventory(ent, holder)
             if "contents" in i:
                 self._load_contents(i.pop("contents"), ent)
@@ -219,8 +222,7 @@ class LegacyLoader:
             acc_id = j["player_specials"].pop("account_id")
             acc = self.account_map[acc_id]
             ent = deserialize_entity(j)
-            new_id = self.system.assign_id(ent, "pc")
-            WORLD.add_component(ent, cm.IsPersistent())
+            new_id = self.system.assign_id(ent, "pc", index=False)
             WORLD.add_component(ent, cm.AccountOwner(account_id=acc.id))
             self.created_entities.add(ent)
             self._load_vars(ent, j)
@@ -231,16 +233,14 @@ class LegacyLoader:
             for k, v in j.pop("equipment", list()):
                 eq_ent = deserialize_entity(v)
                 self.created_entities.add(eq_ent)
-                self.legacy.assign_id(eq_ent, "obj")
+                self.legacy.assign_id(eq_ent, "obj", index=False)
                 api.equip_to_entity(eq_ent, ent, k)
-                WORLD.add_component(eq_ent, cm.IsPersistent())
                 if "contents" in v:
                     self._load_contents(v.pop("contents"), eq_ent)
 
     async def save_userdata(self):
-        for ent, pers in WORLD.get_component(cm.IsPersistent):
-            en = save_entity(ent)
+        for ent, (n, pc, acc_owner) in WORLD.get_components(cm.Name, cm.PlayerCharacter, cm.AccountOwner):
+            data = serialize_entity(ent)
 
-            if (ao := WORLD.try_component(ent, cm.AccountOwner)):
-                acc = Account.objects.get(id=ao.account_id)
-                acc.characters.add(en)
+            acc = Account.objects.get(id=acc_owner.account_id)
+            c = acc.characters.create(player_id=pc.player_id, name=str(n), data=data)
