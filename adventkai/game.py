@@ -1,52 +1,20 @@
-from mudforge.services.game import GameService as OldGame
-import mudforge
 import logging
-import adventkai
-from .modules import Module
 from pathlib import Path
-from .legacy import LegacyLoader
-from adventkai.db.accounts.models import Account
-
+from snekmud.db.accounts.models import Account
+from snekmud.game import GameService as OldGame
+import snekmud
 
 class GameService(OldGame):
 
-    async def on_start(self):
-        mod_path = Path("modules")
-        logging.info(f"Loading game database from {mod_path}")
-        save_root = Path("save")
+    async def at_post_module_initial_load(self):
+        legacy = snekmud.MODULES["legacy"]
 
-        for p in [p for p in mod_path.iterdir() if p.is_dir()]:
-            m = Module(p.name, p, save_root / p.name)
-            adventkai.MODULES[m.name] = m
-
-        logging.info(f"Discovered {len(adventkai.MODULES)} modules!")
-
-        for k, v in adventkai.MODULES.items():
-            await v.load_maps()
-
-        for k, v in adventkai.MODULES.items():
-            await v.load_prototypes()
-
-        legacy_path = Path("legacy")
-        legacy_loader = None
-        if legacy_path.exists() and legacy_path.is_dir():
-            logging.info("Loading legacy database assets...")
-            legacy_loader = LegacyLoader(legacy_path)
-            await legacy_loader.load_assets()
-
-        if not Account.objects.count() and legacy_loader:
+        if not Account.objects.count():
             logging.info("loading legacy player data...")
-            await legacy_loader.load_userdata()
+            await legacy.load_userdata()
 
-        logging.info("Performing initial entity load from database.")
-        for k, v in adventkai.MODULES.items():
-            await v.load_entities_initial()
-        logging.info("Finished initial entity load.")
-
-        logging.info("Finalizing load of entities...")
-        for k, v in adventkai.MODULES.items():
-            await v.load_entities_finalize()
-        logging.info("Finished load!")
+        print(f"CMDHANDLERS: {snekmud.CMDHANDLERS}")
+        print(f"COMMANDS: {snekmud.COMMANDS}")
 
     async def game_loop(self):
         pass

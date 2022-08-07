@@ -1,6 +1,7 @@
 from mudrich.evennia import EvenniaToRich
 from mudrich.circle import CircleToRich
 
+
 class ConnParser:
 
     def __init__(self, conn):
@@ -14,8 +15,6 @@ class ConnParser:
 
     def send_circle(self, s):
         self.conn.send_line(CircleToRich(s))
-
-
 
     async def start(self):
         pass

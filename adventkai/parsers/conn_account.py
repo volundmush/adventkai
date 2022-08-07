@@ -27,9 +27,9 @@ class AccountMenu(ConnParser):
 
     def get_characters(self):
         entities = list()
+        m = adventkai.MODULES["system"]
         for c in self.account.characters.all():
-            m = adventkai.MODULES[c.prototype.module.name]
-            ent = m.entities[c.ent_id]
+            ent = adventkai.PLAYER_ID[c.id]
             entities.append(ent)
         return entities
 

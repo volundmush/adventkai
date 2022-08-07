@@ -1,147 +1,146 @@
 from .base import Modifier as _BaseMod
-from adventkai.typing import Entity
 
 
 class _MobFlag(_BaseMod):
     category = "MobFlags"
-    mod_id = -1
+    modifier_id = -1
 
 
 class Spec(_MobFlag):
-    mod_id = 0
+    modifier_id = 0
 
 
 class Sentinel(_MobFlag):
-    mod_id = 1
+    modifier_id = 1
 
 
 class NoScavenger(_MobFlag):
-    mod_id = 2
+    modifier_id = 2
 
 
 class IsNPC(_MobFlag):
-    mod_id = 3
+    modifier_id = 3
 
 
 class Aware(_MobFlag):
-    mod_id = 4
+    modifier_id = 4
 
 
 class Aggressive(_MobFlag):
-    mod_id = 5
+    modifier_id = 5
 
 
 class StayZone(_MobFlag):
-    mod_id = 6
+    modifier_id = 6
 
 
 class Wimpy(_MobFlag):
-    mod_id = 7
+    modifier_id = 7
 
 
 class AggrEvil(_MobFlag):
-    mod_id = 8
+    modifier_id = 8
 
 
 class AggrGood(_MobFlag):
-    mod_id = 9
+    modifier_id = 9
 
 
 class AggrNeutral(_MobFlag):
-    mod_id = 10
+    modifier_id = 10
 
 
 class Memory(_MobFlag):
-    mod_id = 11
+    modifier_id = 11
 
 
 class Helper(_MobFlag):
-    mod_id = 12
+    modifier_id = 12
 
 
 class NoCharm(_MobFlag):
-    mod_id = 13
+    modifier_id = 13
 
 
 class NoSummon(_MobFlag):
-    mod_id = 14
+    modifier_id = 14
 
 
 class NoSleep(_MobFlag):
-    mod_id = 15
+    modifier_id = 15
 
 
 class AutoBalance(_MobFlag):
-    mod_id = 16
+    modifier_id = 16
 
 
 class NoBlind(_MobFlag):
-    mod_id = 17
+    modifier_id = 17
 
 
 class NoKill(_MobFlag):
-    mod_id = 18
+    modifier_id = 18
 
 
 class NotDeadYet(_MobFlag):
-    mod_id = 19
+    modifier_id = 19
 
 
 class Mountable(_MobFlag):
-    mod_id = 20
+    modifier_id = 20
 
 
 class RightArm(_MobFlag):
-    mod_id = 21
+    modifier_id = 21
 
 
 class LeftArm(_MobFlag):
-    mod_id = 22
+    modifier_id = 22
 
 
 class RightLeg(_MobFlag):
-    mod_id = 23
+    modifier_id = 23
 
 
 class LeftLeg(_MobFlag):
-    mod_id = 24
+    modifier_id = 24
 
 
 class Head(_MobFlag):
-    mod_id = 25
+    modifier_id = 25
 
 
 class JustDesc(_MobFlag):
-    mod_id = 26
+    modifier_id = 26
 
 
 class Husk(_MobFlag):
-    mod_id = 27
+    modifier_id = 27
 
 
 class Spar(_MobFlag):
-    mod_id = 28
+    modifier_id = 28
 
 
 class Dummy(_MobFlag):
-    mod_id = 29
+    modifier_id = 29
 
 
 class AbsorbModel(_MobFlag):
-    mod_id = 30
+    modifier_id = 30
 
 
 class RepairModel(_MobFlag):
-    mod_id = 31
+    modifier_id = 31
 
 
 class NoPoison(_MobFlag):
-    mod_id = 32
+    modifier_id = 32
 
 
 class KnowKaioken(_MobFlag):
-    mod_id = 33
+    modifier_id = 33
 
 
 class PoweringUp(_MobFlag):
-    mod_id = 34
+    modifier_id = 34

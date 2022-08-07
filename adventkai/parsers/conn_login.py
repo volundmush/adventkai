@@ -1,4 +1,4 @@
-from adventkai.db.accounts.models import Account
+from snekmud.db.accounts.models import Account
 from enum import IntEnum
 from django.core.exceptions import ValidationError
 from adventkai.exceptions import CommandError

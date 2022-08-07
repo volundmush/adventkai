@@ -1,151 +1,150 @@
 from .base import Modifier as _BaseMod
-from adventkai.typing import Entity
 
 
 class _ItemType(_BaseMod):
     category = "ItemType"
-    mod_id = -1
+    modifier_id = -1
 
 
 class Light(_ItemType):
-    mod_id = 1
+    modifier_id = 1
 
 
 class Scroll(_ItemType):
-    mod_id = 2
+    modifier_id = 2
 
 
 class Wand(_ItemType):
-    mod_id = 3
+    modifier_id = 3
 
 
 class Staff(_ItemType):
-    mod_id = 4
+    modifier_id = 4
 
 
 class Weapon(_ItemType):
-    mod_id = 5
+    modifier_id = 5
 
 
 class FireWeapon(_ItemType):
-    mod_id = 6
+    modifier_id = 6
 
 
 class CampFire(_ItemType):
-    mod_id = 7
+    modifier_id = 7
 
 
 class Treasure(_ItemType):
-    mod_id = 8
+    modifier_id = 8
 
 
 class Armor(_ItemType):
-    mod_id = 9
+    modifier_id = 9
 
 
 class Potion(_ItemType):
-    mod_id = 10
+    modifier_id = 10
 
 
 class Worn(_ItemType):
-    mod_id = 11
+    modifier_id = 11
 
 
 class Other(_ItemType):
-    mod_id = 12
+    modifier_id = 12
 
 
 class Trash(_ItemType):
-    mod_id = 13
+    modifier_id = 13
 
 
 class Trap(_ItemType):
-    mod_id = 14
+    modifier_id = 14
 
 
 class Container(_ItemType):
-    mod_id = 15
+    modifier_id = 15
 
 
 class Note(_ItemType):
-    mod_id = 16
+    modifier_id = 16
 
 
 class DrinkContainer(_ItemType):
-    mod_id = 17
+    modifier_id = 17
 
 
 class Key(_ItemType):
-    mod_id = 18
+    modifier_id = 18
 
 
 class Food(_ItemType):
-    mod_id = 19
+    modifier_id = 19
 
 
 class Money(_ItemType):
-    mod_id = 20
+    modifier_id = 20
 
 
 class Pen(_ItemType):
-    mod_id = 21
+    modifier_id = 21
 
 
 class Boat(_ItemType):
-    mod_id = 22
+    modifier_id = 22
 
 
 class Fountain(_ItemType):
-    mod_id = 23
+    modifier_id = 23
 
 
 class Vehicle(_ItemType):
-    mod_id = 24
+    modifier_id = 24
 
 
 class Hatch(_ItemType):
-    mod_id = 25
+    modifier_id = 25
 
 
 class Window(_ItemType):
-    mod_id = 26
+    modifier_id = 26
 
 
 class Control(_ItemType):
-    mod_id = 27
+    modifier_id = 27
 
 
 class Portal(_ItemType):
-    mod_id = 28
+    modifier_id = 28
 
 
 class SpellBook(_ItemType):
-    mod_id = 29
+    modifier_id = 29
 
 
 class Board(_ItemType):
-    mod_id = 30
+    modifier_id = 30
 
 
 class Chair(_ItemType):
-    mod_id = 31
+    modifier_id = 31
 
 
 class Bed(_ItemType):
-    mod_id = 32
+    modifier_id = 32
 
 
 class Yum(_ItemType):
-    mod_id = 33
+    modifier_id = 33
 
 
 class Plant(_ItemType):
-    mod_id = 34
+    modifier_id = 34
 
 
 class FishPole(_ItemType):
-    mod_id = 35
+    modifier_id = 35
 
 
 class FishBait(_ItemType):
-    mod_id = 36
+    modifier_id = 36

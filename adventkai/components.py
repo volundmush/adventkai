@@ -1,69 +1,18 @@
 import typing
 from pathlib import Path
-from collections import defaultdict
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
 from enum import IntEnum
-import kdtree
-import sys
-from mudforge.utils import lazy_property
-from mudrich.circle import CircleToRich, CircleStrip
 import adventkai
-from adventkai.serialize import deserialize_entity, serialize_entity
-
-from .typing import Vnum, Entity, GridCoordinates, SpaceCoordinates
-
-
-@dataclass_json
-@dataclass
-class _Save:
-
-    def should_save(self) -> bool:
-        return True
-
-    def save_name(self) -> str:
-        return str(self.__class__.__name__)
-
-    def export(self):
-        return self.to_dict()
-
-    @classmethod
-    def deserialize(cls, data: typing.Any, ent: Entity):
-        return cls.from_dict(data)
+import snekmud
+from snekmud import components as old_cm
+from snekmud.components import _Save, _NoSave, _SingleModifier, EntityID, Name, Description
+from adventkai.typing import Vnum
+from snekmud.typing import Entity
 
 
-@dataclass_json
-@dataclass
-class _NoSave(_Save):
-
-    def should_save(self) -> bool:
-        return False
-
-
-@dataclass_json
-@dataclass
-class InGame(_NoSave):
+class Position(_SingleModifier):
     pass
-
-
-@dataclass_json
-@dataclass
-class PendingRemove(_NoSave):
-    pass
-
-
-@dataclass_json
-@dataclass
-class IsPersistent(_NoSave):
-    pass
-
-
-@dataclass_json
-@dataclass
-class EntityID(_Save):
-    module_name: str = ""
-    prototype: str = ""
-    ent_id: str = ""
 
 
 @dataclass_json
@@ -79,8 +28,8 @@ class FlagBase(_Save):
 
     @classmethod
     def deserialize(cls, data: typing.Any, ent):
-        names = adventkai.MODIFIERS_NAMES[cls.__name__]
-        ids = adventkai.MODIFIERS_ID[cls.__name__]
+        names = snekmud.MODIFIERS_NAMES[cls.__name__]
+        ids = snekmud.MODIFIERS_ID[cls.__name__]
         o = cls()
         for i in data:
             if isinstance(i, int):
@@ -93,18 +42,6 @@ class FlagBase(_Save):
 @dataclass
 class AffectFlags(FlagBase):
     pass
-
-
-@dataclass_json
-@dataclass
-class PlayerCharacter(_Save):
-    player_id: int
-
-
-@dataclass_json
-@dataclass
-class NPC(_Save):
-    vnum: Vnum = -1
 
 
 @dataclass
@@ -272,12 +209,6 @@ class Frozen(_Save):
 
 @dataclass_json
 @dataclass
-class AccountOwner(_Save):
-    account_id: int = 0
-
-
-@dataclass_json
-@dataclass
 class AdminLevel(_Save):
     admin_level: int = 0
     admin_invis: int = 0
@@ -370,13 +301,6 @@ class Physics(_Save):
 
 @dataclass_json
 @dataclass
-class Prototype(_Save):
-    name: str
-    ids: set[str] = field(default_factory=set)
-
-
-@dataclass_json
-@dataclass
 class HasLegacyMobProto(_Save):
     vnum: int = -1
 
@@ -450,6 +374,7 @@ class Triggers(_Save):
     def export(self):
         return self.triggers
 
+
 @dataclass
 class DgScriptHolder(_Save):
     types: int = 0
@@ -463,120 +388,28 @@ class DgScriptHolder(_Save):
         return {"types": self.types, "variables": self.variables}
 
 
-@dataclass_json
-@dataclass
-class InInventory(_NoSave):
-    holder: Entity = -1
-
 
 @dataclass_json
 @dataclass
-class Equipped(_NoSave):
-    holder: Entity = -1
-    slot: int = -1
-
-
-@dataclass_json
-@dataclass
-class Inventory(_Save):
-    inventory: list[Entity] = field(default_factory=list)
-
-    def should_save(self) -> bool:
-        return bool(self.inventory)
-
-    def export(self):
-        return [serialize_entity(e) for e in self.inventory]
-
-    @classmethod
-    def deserialize(cls, data: typing.Any, ent: Entity):
-        o = cls()
-        for d in data:
-            e = deserialize_entity(d)
-            adventkai.WORLD.add_component(e, InInventory(holder=ent))
-            o.inventory.append(e)
-        return o
-
-
-@dataclass_json
-@dataclass
-class Equipment(_Save):
-    equipment: dict[int, Entity] = field(default_factory=dict)
-
-    def should_save(self) -> bool:
-        return bool(self.equipment)
-
-    def export(self):
-        return {k: serialize_entity(v) for k, v in self.equipment.items()}
-
-    @classmethod
-    def deserialize(cls, data: typing.Any, ent: Entity):
-        o = cls()
-        for k, v in data.items():
-            e = deserialize_entity(v)
-            adventkai.WORLD.add_component(e, Equipped(holder=ent, slot=k))
-            o.equipment[k] = e
-        return o
-
-@dataclass_json
-@dataclass
-class SaveInRoom(EntityID):
+class SaveInLegacyRoom(EntityID):
     vnum: Vnum = -1
-    coordinates: GridCoordinates = field(default_factory=lambda: [0, 0, 0])
-
 
 @dataclass_json
 @dataclass
-class InRoom(_Save):
+class InLegacyRoom(_Save):
     holder: Entity = -1
 
     def should_save(self) -> bool:
-        return adventkai.WORLD.entity_exists(self.holder)
+        return snekmud.WORLD.entity_exists(self.holder)
 
     def save_name(self) -> str:
-        return "SaveInRoom"
+        return "SaveInLegacyRoom"
 
     def export(self):
         data = {}
-        if (ent_data := adventkai.WORLD.try_component(self.holder, EntityID)):
-            data.update(ent_data.to_dict())
-        if (vn := adventkai.WORLD.try_component(self.holder, HasVnum)):
-            if vn:
-                data["vnum"] = vn.vnum
+        if (ent_data := snekmud.WORLD.try_component(self.holder, HasVnum)):
+            data["vnum"] = ent_data.vnum
         return data
-
-
-
-
-
-class PointHolder:
-
-    def __init__(self, coordinates: typing.Union[GridCoordinates, SpaceCoordinates], data: typing.Optional[typing.Any] = None):
-        self.coordinates = coordinates
-        self.data = data
-
-    def __len__(self):
-        return len(self.coordinates)
-
-    def __getitem__(self, i):
-        return self.coordinates[i]
-
-    def __repr__(self):
-        return f"Item({self.coordinates},  {self.data})"
-
-
-@dataclass
-class InSpace:
-    space_sector: Entity = -1
-
-
-@dataclass
-class GridMap:
-    rooms: kdtree.Node = field(default_factory=lambda: kdtree.create(dimensions=3))
-
-
-@dataclass
-class SpaceMap:
-    contents: kdtree.Node = field(default_factory=lambda: kdtree.create(dimensions=3))
 
 
 @dataclass_json
@@ -602,27 +435,6 @@ class BankAccount(_Save):
 
     def should_save(self) -> bool:
         return bool(self.last_interest or self.value)
-
-
-@dataclass_json
-@dataclass
-class _SingleModifier(_Save):
-    modifier: "Modifier"
-
-    def export(self):
-        return self.modifier.mod_id
-
-    @classmethod
-    def deserialize(cls, data: typing.Any, ent):
-        names = adventkai.MODIFIERS_NAMES[cls.__name__]
-        ids = adventkai.MODIFIERS_ID[cls.__name__]
-        if (isinstance(data, int)):
-            if (r := ids.get(data, None)):
-                return cls(modifier=r)
-        if (isinstance(data, str)):
-            if (r := names.get(data, None)):
-                return cls(modifier=r)
-        raise Exception(f"Cannot locate {str(self)} {data}")
 
 
 @dataclass_json
@@ -778,85 +590,6 @@ class StatTrain(_Save):
                     or self.speed)
 
 
-class StringBase(_Save):
-    rich_cache = dict()
-
-    def should_save(self) -> bool:
-        return bool(self.plain)
-
-    def __init__(self, s: str):
-        self.color = sys.intern(s)
-        if self.color not in self.rich_cache:
-            self.rich_cache[self.color] = CircleToRich(s)
-
-    def __str__(self):
-        return self.plain
-
-    @property
-    def plain(self):
-        return self.rich.plain
-
-    @lazy_property
-    def rich(self):
-        return self.rich_cache[self.color]
-
-    def __rich_console__(self, console, options):
-        return self.rich.__rich_console__(console, options)
-
-    def __rich_measure__(self, console, options):
-        return self.rich.__rich_measure__(console, options)
-
-    def render(self, console, end: str = ""):
-        return self.rich.render(console, end=end)
-
-    def export(self):
-        return self.color
-
-    @classmethod
-    def deserialize(cls, data: typing.Any, ent):
-        return cls(data)
-
-
-class Name(StringBase):
-    pass
-
-
-class Description(StringBase):
-    pass
-
-
-class ShortDescription(StringBase):
-    pass
-
-
-class LongDescription(StringBase):
-    pass
-
-
-class ActionDescription(StringBase):
-    pass
-
-
-@dataclass_json
-@dataclass
-class ExDescriptions(_Save):
-    ex_descriptions: list[typing.Tuple[Name, Description]] = field(default_factory=list)
-
-    def should_save(self) -> bool:
-        return bool(self.ex_descriptions)
-
-    def export(self):
-        return [(key.export(), desc.export()) for (key, desc) in self.ex_descriptions]
-
-    @classmethod
-    def deserialize(cls, data: typing.Any, ent):
-        o = cls()
-        for k, d in data:
-            o.ex_descriptions.append([Name(k), Description(d)])
-        return o
-
-
-
 @dataclass_json
 @dataclass
 class ItemValues(_Save):
@@ -896,10 +629,6 @@ class AdminFlags(FlagBase):
 @dataclass_json
 @dataclass
 class ItemType(_SingleModifier):
-    pass
-
-
-class WearFlags(FlagBase):
     pass
 
 
@@ -1008,7 +737,7 @@ class Exits(_Save):
         return bool(self.exits)
 
     def export(self):
-        return {int(k): v.to_dict() for k, v in self.exits.items()}
+        return [(int(k), v.to_dict()) for k, v in self.exits.items()]
 
     @classmethod
     def deserialize(cls, data: typing.Any, ent):
@@ -1049,25 +778,6 @@ class ItemFlags(FlagBase):
 @dataclass
 class SectorType(_SingleModifier):
     pass
-
-
-@dataclass
-class Session(_Save):
-    connections: set["GameConnection"] = field(default_factory=set)
-    character: Entity = -1
-    puppet: Entity = -1
-
-    def export(self):
-        data = {}
-        data["connections"] = [c.conn_id for c in self.connections]
-        if adventkai.WORLD.entity_exists(self.character):
-            data["character"] = adventkai.WORLD.get_component(self.character, EntityID).export()
-        return data
-
-
-@dataclass
-class HasSession(_NoSave):
-    session: Entity = -1
 
 
 @dataclass_json
@@ -1116,11 +826,11 @@ class Zone(_Save):
 @dataclass
 class ZoneVnums(_NoSave):
     rooms: dict[Vnum, Entity] = field(default_factory=dict)
-    objects: dict[Vnum, Entity] = field(default_factory=dict)
-    mobiles: dict[Vnum, Entity] = field(default_factory=dict)
+    objects: dict[Vnum, "Prototype"] = field(default_factory=dict)
+    mobiles: dict[Vnum, "Prototype"] = field(default_factory=dict)
     triggers: dict[Vnum, Entity] = field(default_factory=dict)
-    shops: dict[Vnum, Entity] = field(default_factory=dict)
-    guilds: dict[Vnum, Entity] = field(default_factory=dict)
+    shops: dict[Vnum, "Prototype"] = field(default_factory=dict)
+    guilds: dict[Vnum, "Prototype"] = field(default_factory=dict)
 
 
 @dataclass_json
@@ -1142,5 +852,17 @@ class DupeCheck(_Save):
 
 @dataclass_json
 @dataclass
-class DGScriptID(_Save):
+class DgScriptID(_Save):
     script_id: int = 0
+
+
+@dataclass_json
+@dataclass
+class SpawnRoom(_NoSave):
+    room: Entity
+
+
+class HasCmdHandler(old_cm.HasCmdHandler):
+
+    async def update(self):
+        pass

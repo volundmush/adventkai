@@ -1,245 +1,244 @@
 from .base import Modifier as _BaseMod
-from adventkai.typing import Entity
 
 
 class _PreferenceFlag(_BaseMod):
     category = "PreferenceFlags"
-    mod_id = -1
+    modifier_id = -1
 
 
 class Brief(_PreferenceFlag):
-    mod_id = 0
+    modifier_id = 0
 
 class Compact(_PreferenceFlag):
-    mod_id = 1
+    modifier_id = 1
 
 
 class Deaf(_PreferenceFlag):
-    mod_id = 2
+    modifier_id = 2
 
 
 class NoTell(_PreferenceFlag):
-    mod_id = 3
+    modifier_id = 3
 
 
 class DisplayHP(_PreferenceFlag):
-    mod_id = 4
+    modifier_id = 4
 
 
 class DisplayKI(_PreferenceFlag):
-    mod_id = 5
+    modifier_id = 5
 
 
 class DisplayST(_PreferenceFlag):
-    mod_id = 6
+    modifier_id = 6
 
 
 class AutoExit(_PreferenceFlag):
-    mod_id = 7
+    modifier_id = 7
 
 
 class NoHassle(_PreferenceFlag):
-    mod_id = 8
+    modifier_id = 8
 
 
 class Quest(_PreferenceFlag):
-    mod_id = 9
+    modifier_id = 9
 
 
 class Summonable(_PreferenceFlag):
-    mod_id = 10
+    modifier_id = 10
 
 
 class NoRepeat(_PreferenceFlag):
-    mod_id = 11
+    modifier_id = 11
 
 
 class HolyLight(_PreferenceFlag):
-    mod_id = 12
+    modifier_id = 12
 
 
 class Color(_PreferenceFlag):
-    mod_id = 13
+    modifier_id = 13
 
 
 class Spare(_PreferenceFlag):
-    mod_id = 14
+    modifier_id = 14
 
 
 class NoWiz(_PreferenceFlag):
-    mod_id = 15
+    modifier_id = 15
 
 
 class Log1(_PreferenceFlag):
-    mod_id = 16
+    modifier_id = 16
 
 
 class Log2(_PreferenceFlag):
-    mod_id = 17
+    modifier_id = 17
 
 
 class NoAuction(_PreferenceFlag):
-    mod_id = 18
+    modifier_id = 18
 
 
 class NoGossip(_PreferenceFlag):
-    mod_id = 19
+    modifier_id = 19
 
 
 class NoGratz(_PreferenceFlag):
-    mod_id = 20
+    modifier_id = 20
 
 
 class RoomFlags(_PreferenceFlag):
-    mod_id = 21
+    modifier_id = 21
 
 
 class DisplayAuto(_PreferenceFlag):
-    mod_id = 22
+    modifier_id = 22
 
 
 class ClearScreen(_PreferenceFlag):
-    mod_id = 23
+    modifier_id = 23
 
 
 class BuildWalk(_PreferenceFlag):
-    mod_id = 24
+    modifier_id = 24
 
 
 class AFK(_PreferenceFlag):
-    mod_id = 25
+    modifier_id = 25
 
 
 class AutoLoot(_PreferenceFlag):
-    mod_id = 26
+    modifier_id = 26
 
 
 class AutoGold(_PreferenceFlag):
-    mod_id = 27
+    modifier_id = 27
 
 
 class AutoSplit(_PreferenceFlag):
-    mod_id = 28
+    modifier_id = 28
 
 
 class FullExit(_PreferenceFlag):
-    mod_id = 29
+    modifier_id = 29
 
 
 class AutoSacrifice(_PreferenceFlag):
-    mod_id = 30
+    modifier_id = 30
 
 
 class AutoMemorize(_PreferenceFlag):
-    mod_id = 31
+    modifier_id = 31
 
 
 class ViewOrder(_PreferenceFlag):
-    mod_id = 32
+    modifier_id = 32
 
 
 class NoCompress(_PreferenceFlag):
-    mod_id = 33
+    modifier_id = 33
 
 
 class AutoAssist(_PreferenceFlag):
-    mod_id = 34
+    modifier_id = 34
 
 
 class DisplayKIOld(_PreferenceFlag):
-    mod_id = 35
+    modifier_id = 35
 
 
 class DisplayExp(_PreferenceFlag):
-    mod_id = 36
+    modifier_id = 36
 
 
 class DisplayTNL(_PreferenceFlag):
-    mod_id = 37
+    modifier_id = 37
 
 
 class Test(_PreferenceFlag):
-    mod_id = 38
+    modifier_id = 38
 
 
 class Hide(_PreferenceFlag):
-    mod_id = 39
+    modifier_id = 39
 
 
 class NoMailWarning(_PreferenceFlag):
-    mod_id = 40
+    modifier_id = 40
 
 
 class Hints(_PreferenceFlag):
-    mod_id = 41
+    modifier_id = 41
 
 
 class Fury(_PreferenceFlag):
-    mod_id = 42
+    modifier_id = 42
 
 
 class NoDec(_PreferenceFlag):
-    mod_id = 43
+    modifier_id = 43
 
 
 class NoEqSee(_PreferenceFlag):
-    mod_id = 44
+    modifier_id = 44
 
 
 class NoMusic(_PreferenceFlag):
-    mod_id = 45
+    modifier_id = 45
 
 
 class LKeep(_PreferenceFlag):
-    mod_id = 46
+    modifier_id = 46
 
 
 class DisplayTime(_PreferenceFlag):
-    mod_id = 47
+    modifier_id = 47
 
 
 class DisplayGold(_PreferenceFlag):
-    mod_id = 48
+    modifier_id = 48
 
 
 class DisplayPractices(_PreferenceFlag):
-    mod_id = 49
+    modifier_id = 49
 
 
 class NoParry(_PreferenceFlag):
-    mod_id = 50
+    modifier_id = 50
 
 
 class DisplayHUTH(_PreferenceFlag):
-    mod_id = 51
+    modifier_id = 51
 
 
 class DisplayPercent(_PreferenceFlag):
-    mod_id = 52
+    modifier_id = 52
 
 class Carve(_PreferenceFlag):
-    mod_id = 53
+    modifier_id = 53
 
 
 class ArenaWatch(_PreferenceFlag):
-    mod_id = 54
+    modifier_id = 54
 
 
 class NoGive(_PreferenceFlag):
-    mod_id = 55
+    modifier_id = 55
 
 
 class Instruct(_PreferenceFlag):
-    mod_id = 56
+    modifier_id = 56
 
 
 class GHealth(_PreferenceFlag):
-    mod_id = 57
+    modifier_id = 57
 
 
 class IHealth(_PreferenceFlag):
-    mod_id = 58
+    modifier_id = 58
 
 
 class Energize(_PreferenceFlag):
-    mod_id = 59
+    modifier_id = 59

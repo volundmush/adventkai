@@ -1,307 +1,306 @@
 from .base import Modifier as _BaseMod
-from adventkai.typing import Entity
 
 
 class _Affect(_BaseMod):
     category = "AffectFlags"
-    mod_id = -1
+    modifier_id = -1
 
 
 class DontUse(_Affect):
-    mod_id = 0
+    modifier_id = 0
 
 
 class Blind(_Affect):
-    mod_id = 1
+    modifier_id = 1
 
 
 class Invisible(_Affect):
-    mod_id = 2
+    modifier_id = 2
 
 
 class DetectAlignment(_Affect):
-    mod_id = 3
+    modifier_id = 3
 
 
 class DetectInvisible(_Affect):
-    mod_id = 4
+    modifier_id = 4
 
 
 class DetectMagic(_Affect):
-    mod_id = 5
+    modifier_id = 5
 
 
 class SenseLife(_Affect):
-    mod_id = 6
+    modifier_id = 6
 
 
 class WaterWalk(_Affect):
-    mod_id = 7
+    modifier_id = 7
 
 
 class Sanctuary(_Affect):
-    mod_id = 8
+    modifier_id = 8
 
 
 class Group(_Affect):
-    mod_id = 9
+    modifier_id = 9
 
 
 class Curse(_Affect):
-    mod_id = 10
+    modifier_id = 10
 
 
 class Infravision(_Affect):
-    mod_id = 11
+    modifier_id = 11
 
 
 class Poison(_Affect):
-    mod_id = 12
+    modifier_id = 12
 
 
 class WeakenedState(_Affect):
-    mod_id = 13
+    modifier_id = 13
 
 
 class ProtectGood(_Affect):
-    mod_id = 14
+    modifier_id = 14
 
 
 class Sleep(_Affect):
-    mod_id = 15
+    modifier_id = 15
 
 
 class NoTrack(_Affect):
-    mod_id = 16
+    modifier_id = 16
 
 
 class Undead(_Affect):
-    mod_id = 17
+    modifier_id = 17
 
 
 class Paralyze(_Affect):
-    mod_id = 18
+    modifier_id = 18
 
 
 class Sneak(_Affect):
-    mod_id = 19
+    modifier_id = 19
 
 
 class Hide(_Affect):
-    mod_id = 20
+    modifier_id = 20
 
 
 class Unused21(_Affect):
-    mod_id = 21
+    modifier_id = 21
 
 
 class Charm(_Affect):
-    mod_id = 22
+    modifier_id = 22
 
 
 class Flying(_Affect):
-    mod_id = 23
+    modifier_id = 23
 
 
 class WaterBreath(_Affect):
-    mod_id = 24
+    modifier_id = 24
 
 
 class Angelic(_Affect):
-    mod_id = 25
+    modifier_id = 25
 
 
 class Ethereal(_Affect):
-    mod_id = 26
+    modifier_id = 26
 
 
 class MagicOnly(_Affect):
-    mod_id = 27
+    modifier_id = 27
 
 
 class NextPartial(_Affect):
-    mod_id = 28
+    modifier_id = 28
 
 
 class NextNoAction(_Affect):
-    mod_id = 29
+    modifier_id = 29
 
 
 class Stunned(_Affect):
-    mod_id = 30
+    modifier_id = 30
 
 
 class Tamed(_Affect):
-    mod_id = 31
+    modifier_id = 31
 
 
 class CreepingDeath(_Affect):
-    mod_id = 32
+    modifier_id = 32
 
 
 class Spirit(_Affect):
-    mod_id = 33
+    modifier_id = 33
 
 
 class StoneSkin(_Affect):
-    mod_id = 34
+    modifier_id = 34
 
 
 class Summoned(_Affect):
-    mod_id = 35
+    modifier_id = 35
 
 
 class Celestial(_Affect):
-    mod_id = 36
+    modifier_id = 36
 
 
 class Fiendish(_Affect):
-    mod_id = 37
+    modifier_id = 37
 
 
 class FireShield(_Affect):
-    mod_id = 38
+    modifier_id = 38
 
 
 class LowLight(_Affect):
-    mod_id = 39
+    modifier_id = 39
 
 
 class Zanzoken(_Affect):
-    mod_id = 40
+    modifier_id = 40
 
 
 class KnockedOut(_Affect):
-    mod_id = 41
+    modifier_id = 41
 
 
 class Might(_Affect):
-    mod_id = 42
+    modifier_id = 42
 
 
 class Flex(_Affect):
-    mod_id = 43
+    modifier_id = 43
 
 
 class Genisu(_Affect):
-    mod_id = 44
+    modifier_id = 44
 
 
 class Bless(_Affect):
-    mod_id = 45
+    modifier_id = 45
 
 
 class Burnt(_Affect):
-    mod_id = 46
+    modifier_id = 46
 
 
 class Burned(_Affect):
-    mod_id = 47
+    modifier_id = 47
 
 
 class MBreak(_Affect):
-    mod_id = 48
+    modifier_id = 48
 
 
 class Hasshuken(_Affect):
-    mod_id = 49
+    modifier_id = 49
 
 
 class FutureSight(_Affect):
-    mod_id = 50
+    modifier_id = 50
 
 
 class RealParalyze(_Affect):
-    mod_id = 51
+    modifier_id = 51
 
 
 class Infuse(_Affect):
-    mod_id = 52
+    modifier_id = 52
 
 
 class Enlighten(_Affect):
-    mod_id = 53
+    modifier_id = 53
 
 
 class Frozen(_Affect):
-    mod_id = 54
+    modifier_id = 54
 
 
 class FireShield2(_Affect):
-    mod_id = 55
+    modifier_id = 55
 
 
 class Ensnared(_Affect):
-    mod_id = 56
+    modifier_id = 56
 
 
 class Hayasa(_Affect):
-    mod_id = 57
+    modifier_id = 57
 
 
 class Pursuit(_Affect):
-    mod_id = 58
+    modifier_id = 58
 
 
 class Wither(_Affect):
-    mod_id = 59
+    modifier_id = 59
 
 
 class HydroZap(_Affect):
-    mod_id = 60
+    modifier_id = 60
 
 
 class Position(_Affect):
-    mod_id = 61
+    modifier_id = 61
 
 
 class Shocked(_Affect):
-    mod_id = 62
+    modifier_id = 62
 
 
 class Metamorph(_Affect):
-    mod_id = 63
+    modifier_id = 63
 
 
 class HealGlow(_Affect):
-    mod_id = 64
+    modifier_id = 64
 
 
 class EtherealArmor(_Affect):
-    mod_id = 65
+    modifier_id = 65
 
 
 class EtherealChains(_Affect):
-    mod_id = 66
+    modifier_id = 66
 
 
 class Wunjo(_Affect):
-    mod_id = 67
+    modifier_id = 67
 
 
 class Purisaz(_Affect):
-    mod_id = 78
+    modifier_id = 78
 
 
 class Ashed(_Affect):
-    mod_id = 69
+    modifier_id = 69
 
 
 class Puked(_Affect):
-    mod_id = 70
+    modifier_id = 70
 
 
 class Liquefied(_Affect):
-    mod_id = 71
+    modifier_id = 71
 
 
 class Shell(_Affect):
-    mod_id = 72
+    modifier_id = 72
 
 
 class Immunity(_Affect):
-    mod_id = 73
+    modifier_id = 73
 
 
 class SpiritControl(_Affect):
-    mod_id = 74
+    modifier_id = 74

@@ -1,25 +1,13 @@
-from adventkai.typing import Entity
+from snekmud.modifiers import Modifier as BaseModifier
 
 
-class Modifier:
-    mod_id = -1
+class Modifier(BaseModifier):
 
-    def __str__(self):
-        if hasattr(self.__class__, "name"):
-            return self.name
-        return self.__class__.__name__
-
-    def __int__(self):
-        return self.mod_id
-
-    def __repr__(self):
-        return f"<{self.__class__.__name__}: {int(self)}>"
-
-    def is_providing_light(self, ent: Entity) -> bool:
+    def is_providing_light(self, obj) -> bool:
         return False
 
-    def is_providing_darkness(self, ent: Entity) -> bool:
+    def is_providing_darkness(self, obj) -> bool:
         return False
 
-    def provides_gravity_tolerance(self, ent: Entity) -> int:
+    def provides_gravity_tolerance(self, obj) -> int:
         return 0

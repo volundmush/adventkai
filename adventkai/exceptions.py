@@ -8,5 +8,4 @@ class DgScriptError(Exception):
     pass
 
 
-class DatabaseError(Exception):
-    pass
+

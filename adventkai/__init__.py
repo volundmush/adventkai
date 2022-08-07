@@ -1,9 +1,4 @@
-import esper
-from collections import defaultdict
-
-WORLD = esper.World()
-
-MODULES = {}
+TEXT_FILES = {}
 
 LEGACY_ROOMS = {}
 
@@ -20,10 +15,3 @@ LEGACY_SHOPS = {}
 LEGACY_ZONES = {}
 
 PLAYER_ID = {}
-
-COMPONENTS = {}
-
-TEXT_FILES = {}
-
-MODIFIERS_NAMES = defaultdict(dict)
-MODIFIERS_ID = defaultdict(dict)
