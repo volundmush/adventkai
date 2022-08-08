@@ -4,7 +4,7 @@ class CommandError(Exception):
     pass
 
 
-class DgScriptError(Exception):
+class DGScriptError(Exception):
     pass
 
 

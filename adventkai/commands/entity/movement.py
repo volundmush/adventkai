@@ -88,11 +88,11 @@ class SouthEast(_ExitCommand):
 
 class Inside(_ExitCommand):
     name = "inside"
-    min_text = ["in"]
+    min_text = "in"
     ex_dir = ExitDir.INWARDS
 
 
 class Outside(_ExitCommand):
     name = "outside"
-    min_text = ["o"]
+    min_text = "o"
     ex_dir = ExitDir.OUTWARDS

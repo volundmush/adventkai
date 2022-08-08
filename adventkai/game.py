@@ -1,20 +1,21 @@
 import logging
-from pathlib import Path
 from snekmud.db.accounts.models import Account
 from snekmud.game import GameService as OldGame
 import snekmud
+import adventkai
+
 
 class GameService(OldGame):
 
-    async def at_post_module_initial_load(self):
+    async def load_middle(self):
+        await super().load_middle()
+
         legacy = snekmud.MODULES["legacy"]
 
         if not Account.objects.count():
             logging.info("loading legacy player data...")
             await legacy.load_userdata()
 
-        print(f"CMDHANDLERS: {snekmud.CMDHANDLERS}")
-        print(f"COMMANDS: {snekmud.COMMANDS}")
-
     async def game_loop(self):
-        pass
+        for x in set(adventkai.DG_PAUSED):
+            await x.decrement_timer(self.tick_rate)

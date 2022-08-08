@@ -137,7 +137,7 @@ class DisplayRoom(_DR):
             if (rflags := WORLD.try_component(self.room, COMPONENTS["RoomFlags"])) and rflags.flags:
                 build_info.append(f"Flags: [ |g{' '.join(str(r) for r in rflags.flags.all())} |n]")
             if (sector := WORLD.try_component(self.room, COMPONENTS["SectorType"])) and sector.modifier:
-                build_info.append(f"Sector: [ |g{sector.modifier} |n ]")
+                build_info.append(f"Sector: [ |g{str(sector.modifier)} |n ]")
             if build_info:
                 out.append(EvenniaToRich(" ".join(build_info)))
 

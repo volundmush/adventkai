@@ -9,6 +9,8 @@ from snekmud import components as old_cm
 from snekmud.components import _Save, _NoSave, _SingleModifier, EntityID, Name, Description
 from adventkai.typing import Vnum
 from snekmud.typing import Entity
+from adventkai.dgscripts.dgscripts import DGState
+from mudforge.utils import lazy_property
 
 
 class Position(_SingleModifier):
@@ -38,6 +40,10 @@ class FlagBase(_Save):
             elif isinstance(i, str):
                 if (found := names.get(i, None)):
                     o.flags[str(found)] = found
+
+    def all(self):
+        self.flags.values()
+
 
 @dataclass
 class AffectFlags(FlagBase):
@@ -277,7 +283,6 @@ class Physics(_Save):
     def should_save(self) -> bool:
         return bool(self.weight or self.height or self.size != Sizes.UNDEFINED)
 
-
     def export(self):
         data = {}
         if self.weight:
@@ -322,47 +327,14 @@ class Alignment(_Save):
 
 @dataclass_json
 @dataclass
-class DgScriptProto(_Save):
-    attach_type: int = 0
-    data_type: int = 0
-    trigger_type: int = 0
-    cmdlist: list[str] = field(default_factory=list)
-    narg: int = 0
-    arglist: str = ""
-    instances: set[int] = field(default_factory=set)
-
-
-class TrigState(IntEnum):
-    DORMANT = 0
-    RUNNING = 1
-    WAITING = 2
-    ERROR = 3
-    DONE = 4
-    PURGED = 5
-
-
-class NestType(IntEnum):
-    IF = 0
-    WHILE = 1
-    SWITCH = 2
-
-
-@dataclass_json
-@dataclass
-class DgScriptState(_Save):
-    actor: Entity = -1
-    state: TrigState = TrigState.DORMANT
-    curr_line: int = 0
-    depth: list[typing.Tuple[NestType, int]] = field(default_factory=list)
-
-
-@dataclass_json
-@dataclass
 class Triggers(_Save):
     triggers: list[Vnum] = field(default_factory=list)
+    scripts: dict[Vnum, "DGScriptInstance"] = field(default_factory=dict)
+    variables: dict[int, dict[str, str]] = field(default_factory=dict)
+    owner: Entity = None
 
     def should_save(self) -> bool:
-        return bool(self.triggers)
+        return bool(self.triggers or self.variables)
 
     @classmethod
     def deserialize(cls, data: typing.Any, ent):
@@ -371,23 +343,55 @@ class Triggers(_Save):
             o.triggers.append(i)
         return o
 
+    def export_variables(self):
+        """
+        Filters out any variables that may contain Entity references.
+        """
+        out = dict()
+        for context, _data in self.variables.items():
+            out[context] = dict()
+            for k, v in _data.items():
+                if isinstance(v, int):
+                    continue
+                out[context][k] = v
+
     def export(self):
-        return self.triggers
+        return {"triggers": self.triggers, "variables": self.export_variables()}
 
+    def reset_finished(self):
+        for k, v in self.scripts.items():
+            if v.state > 2:
+                v.reset()
 
-@dataclass
-class DgScriptHolder(_Save):
-    types: int = 0
-    scripts: list[Entity] = field(default_factory=list)
-    variables: dict[int, dict[str, str]] = field(default_factory=dict)
+    def reset_active(self):
+        for k, v in self.scripts.items():
+            if v.state > 0:
+                v.reset()
 
-    def should_save(self) -> bool:
-        return bool(self.types or self.variables)
+    def resume(self):
+        for k, v in self.scripts.items():
+            if v.state == DGState.WAITING:
+                v.execute()
 
-    def export(self):
-        return {"types": self.types, "variables": self.variables}
+    def at_post_deserialize(self, ent):
+        self.owner = ent
 
+    async def evaluate(self, script, member: str = "", call: bool = False, arg: str = ""):
+        if (con := self.variables.get(script.context, None)) is not None:
+            if (v := con.get(member.lower(), None)) is not None:
+                return v
+        # Nope? If we're still running then we need to run functions.
+        if (found := adventkai.DG_FUNCTIONS["shared"].get(member.lower(), None)):
+            return await found(self, script, member, call, arg).execute()
 
+        if not (m := snekmud.WORLD.try_component(self.owner, snekmud.COMPONENTS["MetaTypes"])):
+            return ""
+        for x in m.types:
+            if not (avail := adventkai.DG_FUNCTIONS.get(x, None)):
+                continue
+            if (found := avail.get(member.lower(), None)):
+                return await found(self, script, member, call, arg).execute()
+        return ""
 
 @dataclass_json
 @dataclass
@@ -848,12 +852,6 @@ class Price(_Save):
 class DupeCheck(_Save):
     generation: int = 0
     unique_id: int = 0
-
-
-@dataclass_json
-@dataclass
-class DgScriptID(_Save):
-    script_id: int = 0
 
 
 @dataclass_json

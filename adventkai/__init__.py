@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 TEXT_FILES = {}
 
 LEGACY_ROOMS = {}
@@ -15,3 +17,11 @@ LEGACY_SHOPS = {}
 LEGACY_ZONES = {}
 
 PLAYER_ID = {}
+
+DG_FUNCTIONS = defaultdict(dict)
+
+DG_VARS = dict()
+
+DG_PAUSED = set()
+
+STATS = defaultdict(dict)

@@ -12,7 +12,8 @@ from snekmud.serialize import deserialize_entity, serialize_entity
 from snekmud.db.accounts.models import Account
 from snekmud.utils import read_json_file
 from snekmud.modules import Module, Prototype
-
+from adventkai.dgscripts.dgscripts import DGScript
+from mudrich.circle import CircleStrip
 from mudrich.circle import CircleToEvennia
 
 
@@ -27,8 +28,8 @@ def convert_ansi(data):
             data[x] = CircleToEvennia(data[x])
     if 'ExDescriptions' in data:
         data["ExDescriptions"] = [[y[0], CircleToEvennia(y[1])] for y in data['ExDescriptions']]
-
     return data
+
 
 class LegacyModule(Module):
 
@@ -96,22 +97,9 @@ class LegacyModule(Module):
             if not (tf_dir.exists() and tf_dir.is_file()):
                 continue
             for j in read_json_file(tf_dir):
-                ent = deserialize_entity(convert_ansi(j))
-                vcomp = WORLD.component_for_entity(ent, COMPONENTS["HasVnum"])
-                vn = vcomp.vnum
-
-                zv.triggers[vn] = ent
-                adventkai.LEGACY_TRIGGERS[vn] = ent
-
-    def _load_vars(self, ent, j):
-        if "global_vars" in j:
-            h = COMPONENTS["DgScriptHolder"]()
-            for g in j.pop("global_vars"):
-                if g[1] not in h.variables:
-                    h.variables[g[1]] = dict()
-                h.variables[g[1]][g[0]] = g[2]
-            if h.variables:
-                WORLD.add_component(ent, h)
+                j["name"] = CircleStrip(j["name"])
+                j["cmdlist"] = [CircleToEvennia(x) for x in j["cmdlist"]]
+                adventkai.LEGACY_TRIGGERS[j["vnum"]] = DGScript.from_dict(j)
 
     async def load_rooms(self):
         zone_vnums = sorted(adventkai.LEGACY_ZONES.keys())
@@ -133,10 +121,11 @@ class LegacyModule(Module):
             for num, j in enumerate(rj):
                 ent = deserialize_entity(convert_ansi(j))
                 vcomp = WORLD.component_for_entity(ent, COMPONENTS["HasVnum"])
+                WORLD.add_component(ent, COMPONENTS["MetaTypes"](types=["room", "legacy_room"]))
                 vn = vcomp.vnum
                 zv.rooms[vn] = ent
                 adventkai.LEGACY_ROOMS[vn] = ent
-                self._load_vars(ent, j)
+
 
     async def load_prototypes(self):
         await super().load_prototypes()
@@ -165,7 +154,7 @@ class LegacyModule(Module):
                     j["WearSlots"] = dict()
                     j["WearSlots"]["slots"] = self.convert_wears(wears)
 
-                vn = j["HasVnum"]["vnum"]
+                vn = j.pop("HasVnum")["vnum"]
                 proto_key = f"obj_{vn}"
                 j["Prototype"] = {"module_name": self.name, "prototype": proto_key}
                 proto = Prototype(self, proto_key, j)
@@ -183,7 +172,8 @@ class LegacyModule(Module):
                 continue
             for j in read_json_file(of_dir):
                 j = convert_ansi(j)
-                vn = j["HasVnum"]["vnum"]
+                j["NPC"] = dict()
+                vn = j.pop("HasVnum")["vnum"]
                 proto_key = f"mob_{vn}"
                 j["Prototype"] = {"module_name": self.name, "prototype": proto_key}
                 proto = Prototype(self, proto_key, j)
@@ -239,6 +229,7 @@ class LegacyModule(Module):
             self.account_map[j.pop("account_id")] = acc
 
     async def _load_contents(self, data, holder):
+        pro_comp = COMPONENTS["Prototype"]
         for i in data:
             if (wears := i.pop("WearFlags", list())):
                 i["WearSlots"] = dict()
@@ -246,9 +237,9 @@ class LegacyModule(Module):
             ent = deserialize_entity(convert_ansi(i))
             self.created_entities.add(ent)
             proto_key = "obj"
-            if (leg_vnum := WORLD.try_component(ent, COMPONENTS["HasLegacyObjProto"])):
-                if leg_vnum.vnum not in (0, -1, 4294967295):
-                    proto_key = f"obj_{leg_vnum.vnum}"
+            if (proto_obj := WORLD.try_component(ent, pro_comp)):
+                proto_key = proto_obj.prototype
+                WORLD.remove_component(ent, pro_comp)
             self.assign_id(ent, proto_key, index=False)
             await OPERATIONS["AddToInventory"](ent, holder).execute()
             if "contents" in i:
@@ -267,11 +258,11 @@ class LegacyModule(Module):
             self.system.assign_id(ent, "pc", index=False)
             WORLD.add_component(ent, COMPONENTS["AccountOwner"](account_id=acc.id))
             self.created_entities.add(ent)
-            self._load_vars(ent, j)
 
             if "carrying" in j:
                 await self._load_contents(j.pop("carrying"), ent)
 
+            pro_comp = COMPONENTS["Prototype"]
             for k, v in j.pop("equipment", list()):
                 if (wears := v.pop("WearFlags", list())):
                     v["WearSlots"] = dict()
@@ -279,9 +270,9 @@ class LegacyModule(Module):
                 eq_ent = deserialize_entity(convert_ansi(v))
                 self.created_entities.add(eq_ent)
                 proto_key = "obj"
-                if (leg_vnum := WORLD.try_component(ent, COMPONENTS["HasLegacyObjProto"])):
-                    if leg_vnum.vnum not in (0, -1, 4294967295):
-                        proto_key = f"obj_{leg_vnum.vnum}"
+                if (proto_obj := WORLD.try_component(ent, pro_comp)):
+                    proto_key = proto_obj.prototype
+                    WORLD.remove_component(ent, pro_comp)
                 self.assign_id(eq_ent, proto_key, index=False)
                 await OPERATIONS["EquipToEntity"](eq_ent, ent, EQUIP_SLOTS["circle"][self.equip[k]]).execute()
                 if "contents" in v:
