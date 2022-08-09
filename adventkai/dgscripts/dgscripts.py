@@ -9,7 +9,7 @@ from adventkai.exceptions import DGScriptError
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
 from adventkai import DG_FUNCTIONS, DG_VARS, DG_PAUSED
-
+from snekmud.utils import get_or_emplace
 
 class DGType(IntEnum):
     CHARACTER = 0
@@ -349,7 +349,8 @@ class DGScriptInstance:
                             await func(sub_cmd)
                         else:
                             print(f"Unrecognized command {cmd}, passing to execute_cmd...")
-                            #self.handler.owner.execute_cmd(sub_cmd)
+                            has_cmd = get_or_emplace(self.handler.owner, COMPONENTS["HasCmdHandler"])
+                            await has_cmd.process_input_text(sub_cmd)
 
             print(f"Incrementing line...")
             self.curr_line += 1
@@ -663,6 +664,7 @@ class DGScriptInstance:
             yield {"member": member, "call": call, "arg": arg}
 
     async def eval_var(self, data: str) -> str:
+        print(f"EVAL_VAR: {data}")
 
         def _db_check(text):
             if isinstance(text, int):
@@ -674,31 +676,33 @@ class DGScriptInstance:
 
         last_mem = None
         for mem in self.get_members(data):
-            if isinstance(last_mem, int):
-                # the last_mem is an Entity.
-                if not (dg := WORLD.try_component(last_mem, COMPONENTS["Triggers"])):
-                    return ""
-                result = await dg.evaluate(self, **mem)
-                last_mem = _db_check(result)
-            elif callable(last_mem):
-                result = await last_mem(self, **mem)
-                last_mem = _db_check(result)
-            elif hasattr(last_mem, "execute"):
-                result = await last_mem(**mem).execute()
-                last_mem = _db_check(result)
-            elif isinstance(last_mem, str):
-                # strings CANNOT have members.
-                return ""
-            elif last_mem is not None:
-                # safety check
-                return ""
-            else:
+            print(f"Processing eval...{last_mem} - {mem}")
+            if last_mem is None:
+                print(f"Local Vars: {self.vars}")
                 # this is probably a special var. Let's check those first.
                 if (found := DG_VARS.get(mem["member"].lower(), None)):
                     last_mem = found
                 else:
                     v = self.vars.get(mem["member"].lower(), "")
                     last_mem = _db_check(v)
+            elif isinstance(last_mem, int):
+                # the last_mem is an Entity.
+                dg = get_or_emplace(last_mem, COMPONENTS["Triggers"])
+                print(f"Evaluating on Entity {last_mem}")
+                result = await dg.evaluate(self, **mem)
+                last_mem = _db_check(result)
+            elif hasattr(last_mem, "execute"):
+                result = await last_mem(self, **mem).execute()
+                last_mem = _db_check(result)
+            elif callable(last_mem):
+                result = await last_mem(self, **mem)
+                last_mem = _db_check(result)
+            elif isinstance(last_mem, str):
+                # strings CANNOT have members.
+                return ""
+            else:
+                # safety check
+                return ""
 
         while callable(last_mem) or hasattr(last_mem, "execute"):
             if hasattr(last_mem, "execute"):

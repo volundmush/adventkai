@@ -13,7 +13,9 @@ class _Trigger:
         self.comp = None
 
     def get_valid_scripts(self):
+        print(f"checking {self.comp}")
         for vnum in self.comp.triggers:
+            print(f"checking {vnum}...")
             if (proto := LEGACY_TRIGGERS.get(vnum, None)) is None:
                 continue
             if proto.trigger_type & self.trig_type:
@@ -38,8 +40,10 @@ class _Trigger:
         return await self.run_scripts()
 
     async def run_scripts(self):
+        print(f"RUNNING SCRIPTS")
         for vnum, script in self.get_ready_scripts():
-            print(f"trying trigger {vnum} - {script}")
+            print(f"RUNNING {vnum}")
+            script.vars.update(self.script_vars)
             return await script.execute()
 
 

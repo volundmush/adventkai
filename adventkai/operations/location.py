@@ -1,4 +1,4 @@
-from snekmud import WORLD, COMPONENTS, OPERATIONS
+from snekmud import WORLD, COMPONENTS, OPERATIONS, GETTERS
 from adventkai.components import ExitDir, RoomExit
 from snekmud.exceptions import CommandError
 from adventkai import LEGACY_ROOMS
@@ -14,7 +14,7 @@ class AddToRoom(old_loc.AddToRoom):
         self.contents = list()
 
     async def execute(self):
-        self.contents = await OPERATIONS["GetContents"](self.dest).execute()
+        self.contents = GETTERS["GetContents"](self.dest).execute()
         return await super().execute()
 
     async def at_receive_entity(self, ent):
@@ -22,10 +22,10 @@ class AddToRoom(old_loc.AddToRoom):
             return
         npcs = [x for x in self.contents if WORLD.has_component(x, COMPONENTS["NPC"])]
         print(f"AVAILABLE NPCS: {npcs}")
-        script_vars = {"actor": ent, "direction": self.kwargs.pop("direction", "")}
+        script_vars = {"actor": ent, "direction": self.kwargs.pop("from_direction", "")}
         print(f"SCRIPT VARS: {script_vars}")
         for x in npcs:
-            if await OPERATIONS["VisibleTo"](x, ent).execute():
+            if GETTERS["VisibleTo"](x, ent).execute():
                 await OPERATIONS["DgMobGreet"](x, script_vars).execute()
 
 
@@ -61,7 +61,8 @@ class TraverseExit:
         if not self.quiet:
             await self.announce_move_from()
             await self.announce_move_to()
-        await OPERATIONS["AddToRoom"](self.ent, dest).execute()
+        await OPERATIONS["AddToRoom"](self.ent, dest, from_direction=self.ex_dir.name.lower(),
+                                      rev_direction=self.ex_dir.reverse().name.lower()).execute()
         await self.at_transition(self.from_room, dest)
         if self.look_after and (cmd := WORLD.try_component(self.ent, COMPONENTS["HasCmdHandler"])):
             cmd.send(line=await OPERATIONS["DisplayRoom"](self.ent, dest).execute())

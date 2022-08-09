@@ -1,4 +1,4 @@
-from snekmud import COMPONENTS, WORLD, OPERATIONS
+from snekmud import COMPONENTS, WORLD, OPERATIONS, GETTERS
 from snekmud.commands.base import Command
 from snekmud.commands.ent_play import _PlayCommand, EntityPlayCmdHandler as EPCH
 
@@ -15,7 +15,7 @@ class _DeadCommand(_PlayCommand):
     async def access(cls, **kwargs):
         if (acc := kwargs.get("account", None)):
             return acc.handler.get_admin_level() >= cls.admin_level
-        admin_level = await OPERATIONS["GetAdminLevel"](kwargs["entity"]).execute()
+        admin_level = GETTERS["GetAdminLevel"](kwargs["entity"]).execute()
         return admin_level >= cls.admin_level
 
     async def at_pre_execute(self):
@@ -26,7 +26,7 @@ class _DeadCommand(_PlayCommand):
         return True
 
 
-class _RestingCOmmand(_DeadCommand):
+class _RestingCommand(_DeadCommand):
     min_position = 5
 
 

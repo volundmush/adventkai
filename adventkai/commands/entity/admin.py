@@ -8,15 +8,16 @@ class Goto(_DeadCommand):
 
     async def execute(self):
         if not self.args:
-            raise CommandError("Usage: goto <vnum>")
+            raise self.ex("Usage: goto <vnum>")
         try:
             vnum = int(self.args)
         except ValueError:
             raise
         if not (ent := LEGACY_ROOMS.get(vnum, None)):
-            raise CommandError(f"Legacy Room {vnum} not found.")
+            raise self.ex(f"Legacy Room {vnum} not found.")
         await OPERATIONS["RemoveFromLocation"](self.entity, move_type="goto").execute()
         await OPERATIONS["AddToRoom"](self.entity, ent, move_type="goto").execute()
+        self.send(line=await OPERATIONS["DisplayRoom"](self.entity, ent).execute())
 
 
 

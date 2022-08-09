@@ -1,9 +1,15 @@
-from snekmud import WORLD, COMPONENTS, OPERATIONS
+from snekmud import WORLD, COMPONENTS, OPERATIONS, GETTERS
 from adventkai import LEGACY_ROOMS
 
 from snekmud.handlers import GameSessionHandler as GSH
 
+
 class GameSessionHandler(GSH):
+
+    async def at_start(self, copyover=None, cmdhandler: str = "Puppet"):
+        await super().at_start(copyover=copyover, cmdhandler=cmdhandler)
+        if (room := GETTERS["GetRoomLocation"](self.puppet).execute()):
+            self.send(line=await OPERATIONS["DisplayRoom"](self.puppet, room).execute())
 
     async def find_start_room(self):
         if (leg_room := WORLD.try_component(self.character, COMPONENTS["SaveInLegacyRoom"])):

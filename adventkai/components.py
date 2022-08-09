@@ -1,68 +1,54 @@
 import typing
-from pathlib import Path
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json
 from enum import IntEnum
 import adventkai
 import snekmud
 from snekmud import components as old_cm
-from snekmud.components import _Save, _NoSave, _SingleModifier, EntityID, Name, Description
+from snekmud.components import _Save, _NoSave, _SingleModifier, EntityID, Name, Description, _MultiModifiers
 from adventkai.typing import Vnum
 from snekmud.typing import Entity
 from adventkai.dgscripts.dgscripts import DGState
-from mudforge.utils import lazy_property
 
 
 class Position(_SingleModifier):
     pass
 
 
+@dataclass
+class AffectFlags(_MultiModifiers):
+    pass
+
+
+@dataclass
+class PlayerFlags(_MultiModifiers):
+    pass
+
+
+@dataclass
+class MobFlags(_MultiModifiers):
+    pass
+
+
+@dataclass
+class PreferenceFlags(_MultiModifiers):
+    pass
+
+
 @dataclass_json
 @dataclass
-class FlagBase(_Save):
-    flags: dict[str, typing.Any] = field(default_factory=dict)
-
-    def should_save(self) -> bool:
-        return bool(self.flags)
-
-    def export(self):
-        return list(self.flags.keys())
-
-    @classmethod
-    def deserialize(cls, data: typing.Any, ent):
-        names = snekmud.MODIFIERS_NAMES[cls.__name__]
-        ids = snekmud.MODIFIERS_ID[cls.__name__]
-        o = cls()
-        for i in data:
-            if isinstance(i, int):
-                if (found := ids.get(i, None)):
-                    o.flags[str(found)] = found
-            elif isinstance(i, str):
-                if (found := names.get(i, None)):
-                    o.flags[str(found)] = found
-
-    def all(self):
-        self.flags.values()
+class LegacyRoom(_Save):
+    vnum: int = -1
 
 
+@dataclass_json
 @dataclass
-class AffectFlags(FlagBase):
-    pass
+class LegacyItem(_Save):
+    vnum: int = -1
 
 
-@dataclass
-class PlayerFlags(FlagBase):
-    pass
-
-
-@dataclass
-class MobFlags(FlagBase):
-    pass
-
-
-@dataclass
-class PreferenceFlags(FlagBase):
-    pass
+class LegacyNPC(_Save):
+    vnum: int = -1
 
 
 @dataclass_json
@@ -86,8 +72,6 @@ class Molt(_Save):
 
     def should_save(self) -> bool:
         return bool(self.molt_exp or self.molt_level)
-
-
 
 
 @dataclass_json
@@ -226,11 +210,10 @@ class AdminLevel(_Save):
 @dataclass_json
 @dataclass
 class Suppress(_Save):
-    suppression: int = 0
-    suppressed: int = 0
+    suppressed: int = 100
 
     def should_save(self) -> bool:
-        return bool(self.suppressed or self.suppression)
+        return self.suppressed < 100
 
 
 @dataclass_json
@@ -253,7 +236,7 @@ class HasVnum(_Save):
 @dataclass_json
 @dataclass
 class Level(_Save):
-    level: int = 0
+    level: int = 1
     level_adj: int = 0
 
     def should_save(self) -> bool:
@@ -335,13 +318,6 @@ class Triggers(_Save):
 
     def should_save(self) -> bool:
         return bool(self.triggers or self.variables)
-
-    @classmethod
-    def deserialize(cls, data: typing.Any, ent):
-        o = cls()
-        for i in data:
-            o.triggers.append(i)
-        return o
 
     def export_variables(self):
         """
@@ -427,7 +403,7 @@ class Money(_Save):
 
 @dataclass_json
 @dataclass
-class Bonuses(FlagBase):
+class Bonuses(_MultiModifiers):
     pass
 
 
@@ -506,13 +482,13 @@ class Physiology(_Save):
 
 @dataclass_json
 @dataclass
-class Genomes(FlagBase):
+class Genomes(_MultiModifiers):
     pass
 
 
 @dataclass_json
 @dataclass
-class Mutations(FlagBase):
+class Mutations(_MultiModifiers):
     pass
 
 
@@ -626,7 +602,7 @@ class Experience(_Save):
 
 @dataclass_json
 @dataclass
-class AdminFlags(FlagBase):
+class AdminFlags(_MultiModifiers):
     pass
 
 
@@ -636,7 +612,7 @@ class ItemType(_SingleModifier):
     pass
 
 
-class ExtraFlags(FlagBase):
+class ExtraFlags(_MultiModifiers):
     pass
 
 
@@ -765,76 +741,23 @@ class Exits(_Save):
 
 
 @dataclass
-class RoomFlags(FlagBase):
+class RoomFlags(_MultiModifiers):
     pass
 
 
 @dataclass
-class ZoneFlags(FlagBase):
+class ZoneFlags(_MultiModifiers):
     pass
 
 
 @dataclass
-class ItemFlags(FlagBase):
+class ItemFlags(_MultiModifiers):
     pass
 
 
 @dataclass
 class SectorType(_SingleModifier):
     pass
-
-
-@dataclass_json
-@dataclass
-class ZoneResetCmd:
-    """
-    Commands:
-    M - Read a mobile
-    O - Read an Object
-    G - Give obj to mob
-    P - put obj in obj
-    G - obj to Char
-    E - obj to char equip
-    D - set state of door
-    T - trigger command
-    V - assign variable
-    """
-    command: str = "-"
-    if_flag: bool = False
-    arg1: int = 0
-    arg2: int = 0
-    arg3: int = 0
-    arg4: int = 0
-    arg5: int = 0
-    sarg1: str = ""
-    sarg2: str = ""
-
-
-@dataclass_json
-@dataclass
-class Zone(_Save):
-    dir: Path = None
-    legacy_builders: list[str] = field(default_factory=list)
-    builders: list[Entity] = field(default_factory=list)
-    lifespan: int = 0
-    age: int = 0
-    bot: int = 0
-    top: int = 0
-    reset_mode: int = 0
-    commands: list[ZoneResetCmd] = field(default_factory=list)
-    min_level: int = 0
-    max_level: int = 0
-
-
-@dataclass_json
-@dataclass
-class ZoneVnums(_NoSave):
-    rooms: dict[Vnum, Entity] = field(default_factory=dict)
-    objects: dict[Vnum, "Prototype"] = field(default_factory=dict)
-    mobiles: dict[Vnum, "Prototype"] = field(default_factory=dict)
-    triggers: dict[Vnum, Entity] = field(default_factory=dict)
-    shops: dict[Vnum, "Prototype"] = field(default_factory=dict)
-    guilds: dict[Vnum, "Prototype"] = field(default_factory=dict)
 
 
 @dataclass_json

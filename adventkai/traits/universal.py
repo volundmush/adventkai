@@ -1,5 +1,5 @@
 from snekmud import WORLD, COMPONENTS, OPERATIONS
-from adventkai.utils import modifiers_for_entity, get_stat
+from adventkai.utils import modifiers_for_entity, get_trait
 from snekmud.utils import get_or_emplace
 from mudforge.utils import lazy_property
 
@@ -31,12 +31,12 @@ class Weight(MinIntHandler):
         out = 0.0
         if (eq := WORLD.try_component(self.ent, COMPONENTS["Equipment"])):
             for o in eq.all():
-                out += get_stat(o, "Weight").total()
+                out += get_trait(o, "Weight").total()
         return out
 
     def carried(self) -> float:
         out = 0.0
         if (inv := WORLD.try_component(self.ent, COMPONENTS["Inventory"])):
             for o in inv.inventory:
-                out += get_stat(o, "Weight").total()
+                out += get_trait(o, "Weight").total()
         return out

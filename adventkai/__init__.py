@@ -24,4 +24,4 @@ DG_VARS = dict()
 
 DG_PAUSED = set()
 
-STATS = defaultdict(dict)
+TRAITS = defaultdict(dict)

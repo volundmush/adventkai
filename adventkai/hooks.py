@@ -30,6 +30,6 @@ def early_launch():
                 for x in getattr(v, "aliases", list()):
                     adventkai.DG_FUNCTIONS[category][x.lower()] = v
 
-    for category, paths in mudforge.CONFIG.STATS.items():
+    for category, paths in mudforge.CONFIG.TRAITS.items():
         for path in paths:
-            adventkai.STATS[category].update(callables_from_module(path))
+            adventkai.TRAITS[category].update(callables_from_module(path))

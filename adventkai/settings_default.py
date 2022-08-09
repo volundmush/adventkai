@@ -33,18 +33,24 @@ OPERATION_CLASS_PATHS.extend([
 ])
 
 COMMAND_PATHS.extend([
-    "adventkai.commands.entity.admin", "adventkai.commands.entity.info", "adventkai.commands.entity.movement"
+    "adventkai.commands.entity.admin", "adventkai.commands.entity.info", "adventkai.commands.entity.movement",
+    "adventkai.commands.entity.comm"
 ])
 
 CMDHANDLERS["Entity"]["Puppet"] = "adventkai.commands.entity.base.ActionPuppetCmdHandler"
 
 DG_VARS = ["adventkai.dgscripts.dgvars"]
 
-DG_FUNCTIONS = defaultdict(list)
-DG_FUNCTIONS["shared"].append("adventkai.dgscripts.shared")
-DG_FUNCTIONS["item"].append("adventkai.dgscripts.item")
-DG_FUNCTIONS["character"].append("adventkai.dgscripts.character")
 
-STATS = defaultdict(list)
-STATS["universal"].append("adventkai.stats.universal")
-STATS["character"].append("adventkai.stats.character")
+DG_FUNCTIONS = defaultdict(list)
+DG_FUNCTIONS["shared"].append("adventkai.dgscripts.funcs.shared")
+DG_FUNCTIONS["item"].append("adventkai.dgscripts.funcs.item")
+DG_FUNCTIONS["character"].append("adventkai.dgscripts.funcs.character")
+DG_FUNCTIONS["room"].append("adventkai.dgscripts.funcs.room")
+
+
+TRAITS = defaultdict(list)
+TRAITS["universal"].append("adventkai.traits.universal")
+TRAITS["character"].append("adventkai.traits.character")
+
+GETTER_PATHS.append("adventkai.getters")

@@ -1,76 +1,72 @@
-
-def _powerstat_get_set(obj, script, field, handler, arg):
-    if arg:
-        try:
-            getattr(obj, handler).mod_current(int(arg))
-        except (ValueError, TypeError):
-            script.script_log(f"invalid arg for {field}: {arg}")
-    return str(getattr(obj, handler).current())
+from snekmud import COMPONENTS, OPERATIONS, WORLD, GETTERS
+from adventkai.utils import get_trait
+from mudforge.utils import lazy_property
+from .base import _Base, _IntTrait, _StringTrait, _TraitBase, _CompCheck, _FlagCheck, _SpecFlagCheck
 
 
-def race(obj, script, arg):
-    return obj.race.get().get_name()
+class _PowerTrait(_IntTrait):
+    def _powerstat_get_set(obj, script, field, handler, arg):
+        if arg:
+            try:
+                getattr(obj, handler).mod_current(int(arg))
+            except (ValueError, TypeError):
+                script.script_log(f"invalid arg for {field}: {arg}")
+        return str(getattr(obj, handler).current())
 
 
-def sensei(obj, script, arg):
-    return obj.sensei.get().get_name()
+class Race(_StringTrait):
+    trait_name = "Race"
 
 
-def CLASS(obj, script, arg):
-    return sensei(obj, script, arg)
+class Sensei(_StringTrait):
+    trait_name = "Sensei"
+    aliases = ["class"]
 
 
 def bank(obj, script, arg):
     return stat_get_set(obj, script, "bank", "bank_balance", arg)
 
 
-def strength(obj, script, arg):
-    return stat_get_set(obj, script, "strength", "strength", arg)
+class Strength(_IntTrait):
+    trait_name = "Strength"
+    aliases = ["str"]
 
 
-STR = strength
-
-def intelligence(obj, script, arg):
-    return stat_get_set(obj, script, "intelligence", "intelligence", arg)
-
-
-INT = intelligence
+class Intelligence(_IntTrait):
+    trait_name = "Intelligence"
+    aliases = ["int"]
 
 
-def constitution(obj, script, arg):
-    return stat_get_set(obj, script, "constitution", "constitution", arg)
+class Constitution(_IntTrait):
+    trait_name = "Constitution"
+    aliases = ["con"]
 
 
-con = constitution
+class Agility(_IntTrait):
+    trait_name = "Agility"
+    aliases = ["agi"]
 
 
-def agility(obj, script, arg):
-    return stat_get_set(obj, script, "agility", "agility", arg)
-
-agi = agility
-
-
-def wisdom(obj, script, arg):
-    return stat_get_set(obj, script, "wisdom", "wisdom", arg)
+class Wisdom(_IntTrait):
+    trait_name = "Wisdom"
+    aliases = ["wis"]
 
 
-wis = wisdom
+class Speed(_IntTrait):
+    trait_name = "Speed"
+    aliases = ["cha", "spd"]
 
-
-def speed(obj, script, arg):
-    return stat_get_set(obj, script, "speed", "speed", arg)
-
-
-spd = speed
-cha = speed
 
 
 def carry(obj, script, arg):
     return "1" if obj.db.carrying else "0"
 
 
-def dead(obj, script, arg):
-    return "1" if obj.affect_flags.has("Spirit") else "0"
+class Dead(_SpecFlagCheck):
+    trait_name = "AffectFlags"
+    mod_name = "Spirit"
+
+
 
 
 def death(obj, script, arg):

@@ -1,11 +1,13 @@
 from snekmud import WORLD, COMPONENTS, OPERATIONS
-from adventkai.utils import modifiers_for_entity, get_stat
+from adventkai.utils import modifiers_for_entity, get_trait
 from snekmud.utils import get_or_emplace
 from mudforge.utils import lazy_property
+from adventkai.modifiers import races, sensei, positions
 
 import sys
 
 from .base import BaseHandler, BoundedIntHandler, MinIntHandler, PercentHandler
+from snekmud.modifiers import SingleModifier, MultiModifier
 
 
 class _StatHandler(BoundedIntHandler):
@@ -49,19 +51,25 @@ class MaxCarry(BaseHandler):
 
     def calculate(self, exist_value=None) -> float:
         if exist_value is None:
-            exist_value = get_stat(self.ent, "PowerLevel").effective()
-        return (exist_value / 200.0) + (get_stat(self.ent, "Strength").get() * 50.0)
+            exist_value = get_trait(self.ent, "PowerLevel").effective()
+        return (exist_value / 200.0) + (get_trait(self.ent, "Strength").get() * 50.0)
 
 
 class Speednar(BaseHandler):
 
     def calculate(self, exist_value=None) -> float:
         if exist_value is None:
-            exist_value = get_stat(self.ent, "PowerLevel").effective()
-        ratio = get_stat(self.ent, "Weight").burden() - get_stat(self.ent, "MaxCarry").calculate(exist_value=exist_value)
+            exist_value = get_trait(self.ent, "PowerLevel").effective()
+        ratio = get_trait(self.ent, "Weight").burden() - get_trait(self.ent, "MaxCarry").calculate(exist_value=exist_value)
         if ratio >= .05:
             return max(0.01, min(1.0, 1.0-ratio))
         return 1.0
+
+
+class LifeForce(_PowerStatHandler):
+    comp_name = "LifeForce"
+    prop_name = "life_percent"
+    perc_handler = type("LifePercent", (PercentHandler,), {"comp_name": "LifeForce", "prop_name": "life"})
 
 
 class Stamina(_PowerStatHandler):
@@ -81,9 +89,36 @@ class PowerLevel(_PowerStatHandler):
     def current(self) -> int:
         perc = self.perc.get()
         eff = self.effective_max()
-        return eff * min(get_stat(self.ent, "Suppress").get(), perc)
+        return eff * min(get_trait(self.ent, "Suppress").get(), perc)
 
     def effective_max(self) -> int:
         eff = self.effective()
-        speednar = get_stat(self.ent, "Speednar").calculate(exist_value=eff)
+        speednar = get_trait(self.ent, "Speednar").calculate(exist_value=eff)
         return eff * speednar
+
+
+class Race(SingleModifier):
+    comp_name = "Race"
+    default = races.Human
+
+
+class Sensei(SingleModifier):
+    comp_name = "Sensei"
+    default = sensei.Commoner
+
+
+class Position(SingleModifier):
+    comp_name = "Position"
+    default = positions.Standing
+
+
+class MobFlags(MultiModifier):
+    comp_name = "MobFlags"
+
+
+class PlayerFlags(MultiModifier):
+    comp_name = "PlayerFlags"
+
+
+class PreferenceFlags(MultiModifier):
+    comp_name = "PreferenceFlags"

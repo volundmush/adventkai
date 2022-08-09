@@ -1,4 +1,4 @@
-from snekmud import WORLD, COMPONENTS, OPERATIONS
+from snekmud import WORLD, COMPONENTS, OPERATIONS, GETTERS
 from adventkai.components import ExitDir
 from mudrich.evennia import EvenniaToRich
 from collections import defaultdict
@@ -18,6 +18,7 @@ COMPASS_TEMPLATE = """||{N:^3}||
 ||{SW:>3}|| ||{D:^3}|| ||{SE:<3}||
 ||{S:^3}||
 """
+
 
 class DisplayRoom(_DR):
 
@@ -126,7 +127,7 @@ class DisplayRoom(_DR):
 
         out.append(self.header_line)
 
-        out.append(EvenniaToRich(f"Location: {await OPERATIONS['GetDisplayName'](self.viewer, self.room).execute()}"))
+        out.append(EvenniaToRich(f"Location: {GETTERS['GetDisplayName'](self.viewer, self.room).execute()}"))
 
         if (planet := await self.get_planet()):
             out.append(EvenniaToRich(f"Planet: {planet}"))
@@ -173,7 +174,7 @@ class DisplayRoom(_DR):
 
         # contents
         room_format = OPERATIONS["DisplayInRoom"]
-        for c in await OPERATIONS["VisibleContents"](self.viewer, self.room, **self.kwargs).execute():
+        for c in GETTERS["VisibleContents"](self.viewer, self.room, **self.kwargs).execute():
             if c == self.viewer:
                 continue
             results = await room_format(self.viewer, self.room, c, **self.kwargs).execute()

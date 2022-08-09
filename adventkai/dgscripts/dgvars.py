@@ -34,7 +34,7 @@ class Here(_DgVars):
         if (meta := WORLD.try_component(ent, COMPONENTS["MetaTypes"])):
             if "room" in meta.types:
                 return ent
-        if (loc := await OPERATIONS["GetRoomLocation"](ent).execute()) is not None:
+        if (loc := GETTERS["GetRoomLocation"](ent).execute()) is not None:
             return loc
         return ""
 

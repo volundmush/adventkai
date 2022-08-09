@@ -1,8 +1,9 @@
-from snekmud import OPERATIONS, COMPONENTS, WORLD
-from .base import _DeadCommand, _RestingCOmmand
+from snekmud import OPERATIONS, COMPONENTS, WORLD, GETTERS
+from .base import _DeadCommand, _RestingCommand
 from adventkai.components import ExitDir
 
-class _ExitCommand(_RestingCOmmand):
+
+class _ExitCommand(_RestingCommand):
     ex_dir = None
     priority = -100
 
@@ -13,7 +14,7 @@ class _ExitCommand(_RestingCOmmand):
         return "walks"
 
     async def execute(self):
-        if (room := await OPERATIONS["GetRoomLocation"](self.entity).execute()):
+        if (room := GETTERS["GetRoomLocation"](self.entity).execute()):
             if (exits := WORLD.try_component(room, COMPONENTS["Exits"])):
                 if (ex := exits.exits.get(self.ex_dir, None)):
                     await OPERATIONS["TraverseExit"](self.entity, room, self.ex_dir, ex,
