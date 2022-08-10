@@ -3,7 +3,7 @@ from adventkai.components import Sizes
 from . import transformations as t
 import typing
 from snekmud import EQUIP_SLOTS
-
+from adventkai.utils import get_trait
 
 class _Race(_BaseMod):
     category = "Race"
@@ -15,7 +15,7 @@ class _Race(_BaseMod):
     has_seeming = False
     rpp_cost = 0
 
-    def get_available_transformations(self, obj) -> list[typing.Type[t._Form]]:
+    def get_available_transformations(self, ent) -> list[typing.Type[t._Form]]:
         return []
 
     def generate_sdesc(self) -> str:
@@ -35,8 +35,9 @@ class Saiyan(_Race):
     abbr = "Sai"
     rpp_cost = 65
 
-    def get_available_transformations(self, obj) -> list[typing.Type[t._Form]]:
-        if obj.player_flags.has("LegendarySSJ"):
+    def get_available_transformations(self, ent) -> list[typing.Type[t._Form]]:
+        pflags = get_trait(ent, "PlayerFlags")
+        if pflags.has("LegendarySSJ"):
             return [t.SuperSaiyan, t.LegendarySuperSaiyan]
         else:
             return [t.SuperSaiyan, t.SuperSaiyan2, t.SuperSaiyan3, t.SuperSaiyan4]
@@ -80,7 +81,7 @@ class Halfbreed(_Race):
     modifier_id = 7
     abbr = "H-B"
 
-    def get_available_transformations(self, obj) -> list[typing.Type[t._Form]]:
+    def get_available_transformations(self, ent) -> list[typing.Type[t._Form]]:
         return [t.HBSuperSaiyan, t.HBSuperSaiyan2, t.HBSuperSaiyan3]
 
     def get_available_limbs(self):

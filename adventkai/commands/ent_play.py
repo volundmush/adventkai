@@ -13,7 +13,6 @@ class ActionPuppetCmdHandler(EPCH):
     pass
 
 
-
 class _DeadCommand(_PlayCommand):
     min_position = 0
     admin_level = 0

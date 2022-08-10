@@ -173,12 +173,30 @@ class DisplayRoom(_DR):
         out.append(self.subheader_line)
 
         # contents
-        room_format = OPERATIONS["DisplayInRoom"]
+        room_format = GETTERS["DisplayInRoom"]
         for c in GETTERS["VisibleContents"](self.viewer, self.room, **self.kwargs).execute():
             if c == self.viewer:
                 continue
-            results = await room_format(self.viewer, self.room, c, **self.kwargs).execute()
+            results = EvenniaToRich(room_format(self.viewer, self.room, c, **self.kwargs).execute())
             out.append(results)
 
         return Group(*out)
 
+
+class DisplayExamine:
+
+    def __init__(self, viewer, target, **kwargs):
+        self.viewer = viewer
+        self.target = target
+        self.kwargs = kwargs
+
+    async def execute(self):
+
+        if not (cmd := WORLD.try_component(self.viewer, COMPONENTS["HasCmdHandler"])):
+            return
+
+        comps = WORLD.components_for_entity(self.target)
+
+        for comp in comps:
+            print(f"trying to print {comp}")
+            cmd.send(python=comp)

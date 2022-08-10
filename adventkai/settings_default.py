@@ -34,7 +34,7 @@ OPERATION_CLASS_PATHS.extend([
 
 COMMAND_PATHS.extend([
     "adventkai.commands.entity.admin", "adventkai.commands.entity.info", "adventkai.commands.entity.movement",
-    "adventkai.commands.entity.comm"
+    "adventkai.commands.entity.comm", "adventkai.commands.entity.action"
 ])
 
 CMDHANDLERS["Entity"]["Puppet"] = "adventkai.commands.entity.base.ActionPuppetCmdHandler"

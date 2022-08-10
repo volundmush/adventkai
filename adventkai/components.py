@@ -5,10 +5,16 @@ from enum import IntEnum
 import adventkai
 import snekmud
 from snekmud import components as old_cm
-from snekmud.components import _Save, _NoSave, _SingleModifier, EntityID, Name, Description, _MultiModifiers
+from snekmud.components import _Save, _NoSave, _SingleModifier, EntityID, Name, Description, _MultiModifiers, _StringBase
 from adventkai.typing import Vnum
 from snekmud.typing import Entity
 from adventkai.dgscripts.dgscripts import DGState
+
+
+@dataclass_json
+@dataclass
+class Article(_StringBase):
+    pass
 
 
 class Position(_SingleModifier):
@@ -138,11 +144,8 @@ class DeathData(_Save):
 
 @dataclass_json
 @dataclass
-class Transform(_Save):
-    transformation: int = 0
-
-    def should_save(self) -> bool:
-        return bool(self.transformation)
+class Transformation(_SingleModifier):
+    pass
 
 
 @dataclass_json
@@ -314,7 +317,7 @@ class Triggers(_Save):
     triggers: list[Vnum] = field(default_factory=list)
     scripts: dict[Vnum, "DGScriptInstance"] = field(default_factory=dict)
     variables: dict[int, dict[str, str]] = field(default_factory=dict)
-    owner: Entity = None
+    owner: typing.Optional[Entity] = None
 
     def should_save(self) -> bool:
         return bool(self.triggers or self.variables)

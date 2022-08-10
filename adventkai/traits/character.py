@@ -112,6 +112,17 @@ class Position(SingleModifier):
     default = positions.Standing
 
 
+class Transformation(SingleModifier):
+    comp_name = "Transformation"
+    default = None
+
+    async def transform_to(self, form):
+        pass
+
+    async def revert(self, ent):
+        pass
+
+
 class MobFlags(MultiModifier):
     comp_name = "MobFlags"
 

@@ -26,11 +26,16 @@ def _broadcast(s: str):
 
 
 def convert_ansi(data):
-    for x in ('Name', 'ShortDescription', 'LongDescription', 'Description'):
+    for x in ('Name', 'ShortDescription', 'RoomDescription', 'Description', 'ActionDescription'):
         if x in data:
             data[x] = CircleToEvennia(data[x])
     if 'ExDescriptions' in data:
         data["ExDescriptions"] = [[y[0], CircleToEvennia(y[1])] for y in data['ExDescriptions']]
+
+    if (trig := data.get("Triggers", None)):
+        variables = {k: v for k, v in trig.get("variables", list())}
+        data["Triggers"]["variables"] = variables
+
     return data
 
 
