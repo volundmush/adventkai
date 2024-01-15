@@ -1,6 +1,7 @@
 import os
 import sys
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
+from Cython.Build import cythonize
 
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
@@ -20,21 +21,6 @@ def get_requirements():
         if line:
             reqs.append(line)
     return reqs
-
-
-def get_scripts():
-    """
-    Determine which executable scripts should be added. For Windows,
-    this means creating a .bat file.
-    """
-    if OS_WINDOWS:
-        batpath = os.path.join("bin", "windows", "advent.bat")
-        scriptpath = os.path.join(sys.prefix, "Scripts", "advent_launcher.py")
-        with open(batpath, "w") as batfile:
-            batfile.write('@"%s" "%s" %%*' % (sys.executable, scriptpath))
-        return [batpath, os.path.join("bin", "windows", "advent_launcher.py")]
-    else:
-        return [os.path.join("bin", "unix", "advent")]
 
 
 def package_data():
@@ -59,6 +45,18 @@ this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
+extensions = [
+    Extension(
+        "dbat",
+        sources=["src/dbat/*.pyx"],
+        include_dirs=["include"],
+        library_dirs=["bin"],
+        libraries=["circlemud"],
+        #extra_objects=['bin/libcirclemud.a'],
+        language="c++"
+    )
+]
+
 # setup the package
 setup(
     name="adventkai",
@@ -67,17 +65,16 @@ setup(
     maintainer="VolundMush",
     url="https://github.com/volundmush/adventkai",
     description="",
-    license="LGPL",
+    license="MIT",
     long_description=long_description,
     long_description_content_type="text/markdown",
     packages=find_packages(),
     package_data={"": package_data()},
     install_requires=get_requirements(),
     zip_safe=False,
-    scripts=get_scripts(),
     classifiers=[
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.12",
         "Intended Audience :: Developers",
         "Topic :: Games/Entertainment :: Multi-User Dungeons (MUD)",
         "Topic :: Games/Entertainment :: Puzzle Games",
@@ -85,9 +82,10 @@ setup(
         "Topic :: Games/Entertainment :: Simulation",
         "Topic :: Software Development :: Libraries :: Application Frameworks",
     ],
-    python_requires=">=3.10",
+    python_requires=">=3.12",
     project_urls={
         "Source": "https://github.com/volundmush/adventkai",
         "Issue tracker": "https://github.com/volundmush/adventkai/issues",
     },
+    ext_modules=cythonize(extensions)
 )

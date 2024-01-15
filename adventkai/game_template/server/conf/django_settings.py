@@ -1,1 +1,0 @@
-from adventkai.django_settings_default import *

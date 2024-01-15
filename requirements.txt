@@ -1,1 +1,6 @@
-snekmud
+websockets
+aiodns
+aiohttp
+orjson
+cython
+rich
