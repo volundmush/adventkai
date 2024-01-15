@@ -15,9 +15,13 @@ exit 1
 ;;
 esac
 
-OUTFOLDER=cmake-build-${MODE}
+rm -f *.so
+rm -f circle/*.cpp
+
+OUTFOLDER=cmake-build
 
 mkdir -p $OUTFOLDER
-cmake -S . -B $OUTFOLDER -D CMAKE_BUILD_TYPE=$MODE
+cmake -S dbat -B $OUTFOLDER -D CMAKE_BUILD_TYPE=$MODE
 cmake --build $OUTFOLDER -- -j $(nproc)
 
+python setup.py build_ext --inplace

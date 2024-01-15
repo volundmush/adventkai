@@ -56,3 +56,7 @@ project_template/bartholos.run
 
 bin/
 cmake-*
+build/
+lib/
+wrapper/*.cpp
+dbat/
