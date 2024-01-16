@@ -1,27 +1,16 @@
 from collections import defaultdict
 
-TEXT_FILES = {}
+CONFIG = {}
+SERVICES = {}
+CLASSES = {}
+NET_CONNECTIONS = {}
+GAME_CONNECTIONS = {}
+PENDING_CONNECTIONS = dict()
+PENDING_DISCONNECTIONS = dict()
+PENDING_INPUT = set()
 
-LEGACY_ROOMS = {}
+HOOKS = defaultdict(list)
 
-LEGACY_MOBILES = {}
+GAME = None
 
-LEGACY_OBJECTS = {}
-
-LEGACY_TRIGGERS = {}
-
-LEGACY_GUILDS = {}
-
-LEGACY_SHOPS = {}
-
-LEGACY_ZONES = {}
-
-PLAYER_ID = {}
-
-DG_FUNCTIONS = defaultdict(dict)
-
-DG_VARS = dict()
-
-DG_PAUSED = set()
-
-TRAITS = defaultdict(dict)
+SENDABLES = dict()

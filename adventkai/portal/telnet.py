@@ -14,7 +14,7 @@ from rich.color import ColorType
 from rich.console import Group
 
 from adventkai.utils import generate_name
-from .game_session import GameSession, ClientCommand, ServerSendables, Sendable
+from .game_session import GameSession, ClientCommand
 from ..core import Service
 
 
@@ -655,6 +655,7 @@ class TelnetProtocol(GameSession):
             self.tasks["writer"] = tg.create_task(self.run_writer())
             self.tasks["negotiation"] = tg.create_task(self.run_negotiation())
 
+
     async def run_reader(self):
         try:
             while data := await self.reader.read(1024):
@@ -790,17 +791,6 @@ class TelnetProtocol(GameSession):
         except Exception as err:
             logging.error(traceback.format_exc())
             logging.error(err)
-
-    async def handle_incoming_renderable_gmcp(self, msg: ServerSendables):
-        for sendable in msg.sendables:
-            if sendable.renderables:
-                g = Group(*sendable.renderables)
-                result = self.print(g)
-                await self.send_text(result)
-            if self.capabilities.gmcp:
-                op: GMCPOption = self.options.get(TelnetCode.GMCP, None)
-                for command, data in sendable.gmcp:
-                    await op.send_gmcp(command, data)
 
     async def handle_send_text(self, text: str):
         msg = TelnetData(

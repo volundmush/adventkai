@@ -78,12 +78,11 @@ LIBRARY_DIRS = [
 extensions = [
     Extension(
         "circlemud",
-        sources=["circle/*.pyx"],
+        sources=["circle/circlemud.pyx"],
         include_dirs=INCLUDE_PATHS,
         library_dirs=LIBRARY_DIRS,
         libraries=["circlemud", "SQLiteCpp", "fmtd", "sodium",
                    "sqlite3"],
-        #extra_objects=['bin/libcirclemud.a'],
         language="c++"
     )
 ]

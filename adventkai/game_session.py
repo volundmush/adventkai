@@ -6,6 +6,7 @@ from rich.abc import RichRenderable
 
 @dataclass
 class Capabilities:
+    protocol: str = "telnet"
     session_name: str = ""
     encryption: bool = False
     client_name: str = "UNKNOWN"
@@ -54,7 +55,16 @@ class ClientCommand:
     text: str = ""
 
     async def at_server_receive(self, session):
-        pass
+        await session.handle_command(self.text)
+
+
+@dataclass
+class ClientGMCP:
+    cmd: str
+    data: "Any"
+
+    async def at_server_receive(self, session):
+        await session.receive_gmcp(self.cmd, self.data)
 
 
 @dataclass
@@ -62,49 +72,14 @@ class ClientUpdate:
     capabilities: dict[str, "Any"] = field(default_factory=dict)
 
     async def at_server_receive(self, session):
-        pass
+        await session.change_capabilities(self.capabilities)
 
 
 @dataclass
 class ClientDisconnect:
+
     async def at_server_receive(self, session):
         pass
-
-
-@dataclass
-class ServerSendables:
-    sendables: list["Sendable", ...] = field(default_factory=list)
-
-    async def at_portal_receive(self, session):
-        pass
-
-
-@dataclass
-class Sendable:
-    renderables: list[RichRenderable, ...] = field(default_factory=list)
-    gmcp: None | tuple[str, dict | list | None] = None
-    mode: str | None = None
-
-    def set_gmcp(self, command: str, data=None):
-        self.gmcp = (command, data)
-
-    def add_renderable(self, renderable: RichRenderable | str):
-        self.renderables.append(renderable)
-
-    async def at_portal_receive(self, session):
-        await session.handle_incoming_renderable_gmcp(self)
-
-
-@dataclass
-class ServerSendables:
-    sendables: list[Sendable, ...] = field(default_factory=list)
-    response_id: int = -1
-
-    def add_sendable(self, sendable):
-        self.sendables.append(sendable)
-
-    async def at_portal_receive(self, session):
-        await session.handle_incoming_renderable_gmcp(self)
 
 
 @dataclass
@@ -127,6 +102,23 @@ class ServerMSSP:
 
     async def at_portal_receive(self, session):
         await session.send_mssp(self.data)
+
+
+@dataclass
+class ServerText:
+    data: str
+
+    async def at_portal_receive(self, session):
+        await session.send_game_text(self.data)
+
+
+@dataclass
+class ServerGMCP:
+    cmd: str
+    data: "Any"
+
+    async def at_portal_receive(self, session):
+        await session.send_gmcp(self.cmd, self.data)
 
 
 class GameSession:

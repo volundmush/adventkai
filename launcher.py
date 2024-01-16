@@ -35,8 +35,8 @@ class Launcher:
     console = Console()
 
     applications = {
-        "portal": os.path.join("game_code", "portal.py"),
-        "server": os.path.join("game_code", "server.py"),
+        "portal": "portal.py",
+        "server": "server.py",
     }
 
     env_vars = dict()
@@ -104,7 +104,7 @@ class Launcher:
             # This doesn't actually do anything except verify that the process exists.
             os.kill(pid, 0)
         except OSError:
-            console.print(f"Process ID for {name} seems stale. Removing stale pidfile.")
+            self.console.print(f"Process ID for {name} seems stale. Removing stale pidfile.")
             os.remove(pidfile)
             return False
         return True
@@ -135,15 +135,15 @@ class Launcher:
         if not self.ensure_stopped(app):
             raise ValueError(f"{app} is already running!")
         env = os.environ.copy()
-        cmd = f"{sys.executable} {self.applications['app']}"
+        cmd = f"{sys.executable} {self.applications[app]}"
         subprocess.Popen(shlex.split(cmd), env=env)
 
     def operation_start(self, op, args, unknown):
         applications = ["server", "portal"]
-        if args:
-            if not (app := partial_match(args, self.applications.keys())):
+        if unknown:
+            if not (app := partial_match(unknown[0], applications)):
                 raise ValueError(
-                    f"Application {args} not found. Choices are: {applications}"
+                    f"Application {unknown[0]} not found. Choices are: {applications}"
                 )
             applications = [app]
         for app in applications:
@@ -168,10 +168,10 @@ class Launcher:
 
     def operation_end(self, op, args, unknown, sig, remove_pidfile=False):
         applications = ["server", "portal"]
-        if args:
-            if not (app := partial_match(args, self.applications.keys())):
+        if unknown:
+            if not (app := partial_match(unknown[0], applications)):
                 raise ValueError(
-                    f"Application {args} not found. Choices are: {applications}"
+                    f"Application {unknown[0]} not found. Choices are: {applications}"
                 )
             applications = [app]
         for app in applications:
@@ -232,3 +232,6 @@ class Launcher:
             self.console.print_exception(show_locals=True)
 
 
+if __name__ == "__main__":
+    launcher = Launcher()
+    launcher.run()

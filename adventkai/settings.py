@@ -19,10 +19,6 @@ TELNET = {
     #    "tls": 7998
 }
 
-# external ports used by (game client) websocket connections
-# Omit them to disable.
-WEBSOCKET = {"plain": 7997, "tls": 7996}
-
 # external port used by SSH. This doesn't have a TLS version because
 # SSH has its own encryption.
 # Omit to disable.
@@ -31,10 +27,16 @@ SSH = 7995
 
 # external ports used by the webserver
 # Omit them to disable.
-WEBSITE = {"plain": 80, "tls": 443}
+WEBSERVER_INTERFACE = "0.0.0.0"
+WEBSERVER_PORT = 6800
+
+# PORTAL_WS
+PORTAL_WEBSERVER = "ws://127.0.0.1:6800/ws"
 
 # The hostname to use for the website.
 HOSTNAME = "example.com"
+SCHEME = "http"
+
 
 CORES = {
     "portal": "adventkai.portal.core.PortalCore",
@@ -48,9 +50,10 @@ PORTAL_SERVICES = {
 
 PORTAL_CLASSES = {"telnet_protocol": "adventkai.portal.telnet.TelnetProtocol"}
 
-SERVER_CLASSES = {"game_session": "adventkai.server.game_session.GameSession"}
+SERVER_CLASSES = {"game_session": "circlemud.GameSession"}
 
-SERVER_SERVICES = {"link": "adventkai.server.link.LinkService"}
+SERVER_SERVICES = {"web": "adventkai.server.webserver.WebService",
+                   "game": "circlemud.GameService"}
 
 SENDABLE_CLASS_MODULES = list()
 

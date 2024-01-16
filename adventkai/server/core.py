@@ -10,9 +10,8 @@ class ServerCore(Core):
 
     async def handle_new_client(self, ws, data):
         game_sess_class = adventkai.CLASSES["game_session"]
-        sess = game_sess_class(ws, data)
+        sess = game_sess_class(self, ws, data)
         sess_name = data.capabilities.session_name
-        sess.core = self
 
         try:
             self.game_sessions[sess_name] = sess

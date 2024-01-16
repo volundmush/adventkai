@@ -4,10 +4,13 @@ from collections import defaultdict
 from rich.color import ColorType, ColorSystem
 from typing import Optional
 import logging
+import enum
 import re
 import traceback
 from websockets import client as websocket_client
 import pickle
+from adventkai.ansi import circle_to_rich
+import adventkai
 
 from adventkai.game_session import (
     GameSession as BaseGameSession,
@@ -17,16 +20,24 @@ from adventkai.game_session import (
     ClientUpdate,
     ClientDisconnect,
     ServerDisconnect,
-    ServerSendables,
+    ServerGMCP,
     ServerUserdata,
-    Sendable,
+    ServerText,
     ServerMSSP,
 )
 
 from adventkai.utils import lazy_property
 
 
+class SessionState(enum.IntEnum):
+    Login = 0
+    CharSelect = 1
+    CharMenu = 2
+    Playing = 3
+
+
 class GameSession(BaseGameSession):
+
     def __init__(self):
         self.capabilities = Capabilities()
         self.task_group = asyncio.TaskGroup()
@@ -36,6 +47,9 @@ class GameSession(BaseGameSession):
         self.userdata = None
         self.outgoing_queue = asyncio.Queue()
         self.linked = False
+        self.jwt = None
+        self.jwt_claims = dict()
+        self.state = SessionState.Login
 
     @lazy_property
     def console(self):
@@ -91,7 +105,7 @@ class GameSession(BaseGameSession):
         while self.running:
             delay = 0.0
             try:
-                async with websocket_client.unix_connect("adventkai.run") as ws:
+                async with websocket_client.connect(adventkai.GAME.settings.PORTAL_WEBSERVER) as ws:
                     self.linked = True
                     delay_total = 0.0
                     hello = ClientHello(self.userdata, self.capabilities)
@@ -133,9 +147,6 @@ class GameSession(BaseGameSession):
         if (method := getattr(msg, "at_portal_receive", None)) is not None:
             await method(self)
 
-    async def handle_incoming_renderable_gmcp(self, msg):
-        pass
-
     async def send_text(self, text: str, force_endline=True):
         if not text:
             return
@@ -144,6 +155,14 @@ class GameSession(BaseGameSession):
         if force_endline and not text.endswith("\r\n"):
             text += "\r\n"
         await self.handle_send_text(text)
+
+    async def send_game_text(self, text: str):
+        # sanitize the text...
+        replaced = text.replace("\r", "")
+        replaced = replaced.replace("\n", "\r\n")
+        out = circle_to_rich(replaced)
+        rendered = self.print(out)
+        await self.handle_send_text(rendered)
 
     async def handle_send_text(self, text: str):
         pass

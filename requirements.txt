@@ -4,3 +4,6 @@ aiohttp
 orjson
 cython
 rich
+aioquic
+sanic[http3]
+sanic-jwt
