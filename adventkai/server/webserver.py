@@ -7,14 +7,17 @@ from adventkai.game_session import ClientHello
 from sanic_jwt import Initialize
 from sanic_jwt import exceptions
 
-from circlemud import authenticate
+from circlemud import account_manager
 
 
 class WebService(Service):
     def __init__(self, core):
         super().__init__(core)
         self.app = Sanic(core.settings.NAME)
-        Initialize(self.app, authenticate=authenticate)
+        Initialize(self.app, claim_aud=core.settings.HOSTNAME, authenticate=account_manager.authenticate,
+                   retrieve_user=account_manager.retrieve_user)
+        from .api import api
+        self.app.blueprint(api)
 
     async def at_pre_start(self):
         app = self.app
@@ -40,3 +43,19 @@ class WebService(Service):
         match msg:
             case ClientHello():
                 await self.core.handle_new_client(ws, msg)
+
+    async def authenticate(self, request, *args, **kwargs):
+        username = request.json.get("username", None)
+        password = request.json.get("password", None)
+
+        if not username or not password:
+            raise exceptions.AuthenticationFailed("Missing username or password.")
+
+        user = None
+        if user is None:
+            raise exceptions.AuthenticationFailed("User not found.")
+
+        if password != user.password:
+            raise exceptions.AuthenticationFailed("Password is incorrect.")
+
+        return user

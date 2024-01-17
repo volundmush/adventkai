@@ -6,6 +6,7 @@ from libcpp.map cimport map
 
 cdef extern from "dbat/structs.h":
     cdef cppclass account_data:
+        int vn
         string name
         string email
         # string passHash - NOT including passHash here.

@@ -165,23 +165,49 @@ class GameService(Service):
             await asyncio.sleep(wait_time)
             deltaTimeInSeconds = time.perf_counter() - start
 
-async def authenticate(request, *args, **kwargs):
-    from sanic_jwt import exceptions
-    username = request.json.get("username", None)
-    password = request.json.get("password", None)
+cdef class _AccountManager:
+    async def retrieve_user(self, request, payload, *args, **kwargs):
+        if payload:
+            if not (user_id := payload.get("user_id", None)):
+                return None
+            found = accounts.accounts.find(user_id)
+            if found == accounts.accounts.end():
+                return None
+            user = deref(found).second
 
-    if not username or not password:
-        raise exceptions.AuthenticationFailed("Missing username or password.")
+            out = {"user_id": user.vn, "username": user.name.decode("UTF-8"), "adminLevel": user.adminLevel}
+            if not user.email.empty():
+                out["email"] = user.email.decode("UTF-8")
 
-    user = accounts.findAccount(username.encode())
+            return out
 
-    if user is NULL:
-        raise exceptions.AuthenticationFailed("Incorrect credentials.")
+        return None
 
-    if not user.checkPassword(password.encode()):
-        raise exceptions.AuthenticationFailed("Incorrect credentials.")
+    async def authenticate(self, request, *args, **kwargs):
+        from sanic_jwt import exceptions
+        username = request.json.get("username", None)
+        password = request.json.get("password", None)
 
-    return {"username": user.name.decode("UTF-8"), "adminLevel": user.adminLevel}
+        if not username or not password:
+            raise exceptions.AuthenticationFailed("Missing username or password.")
+
+        user = accounts.findAccount(username.encode())
+
+        if user is NULL:
+            raise exceptions.AuthenticationFailed("Incorrect credentials.")
+
+        if not user.checkPassword(password.encode()):
+            raise exceptions.AuthenticationFailed("Incorrect credentials.")
+
+        out = {"user_id": user.vn, "username": user.name.decode("UTF-8"), "adminLevel": user.adminLevel}
+        if not user.email.empty():
+            out["email"] = user.email.decode("UTF-8")
+        if not user.characters.empty():
+            out["characters"] = [x for x in user.characters]
+
+        return out
+
+account_manager = _AccountManager()
 
 # Keeping this here as an example of how to iterate through stuff.
 def print_account_names():
