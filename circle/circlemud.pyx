@@ -166,7 +166,7 @@ cdef save_shops(dump_data: dict):
 
     while it != end:
         dumped.append({"id": deref(it).first,
-                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8")})
+                       "data": utils.rjdump(deref(it).second.rserialize()).decode("UTF-8")})
         inc(it)
     dump_data["shops"] = dumped
 
@@ -179,7 +179,7 @@ cdef save_guilds(dump_data: dict):
 
     while it != end:
         dumped.append({"id": deref(it).first,
-                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8")})
+                       "data": utils.rjdump(deref(it).second.rserialize()).decode("UTF-8")})
         inc(it)
     dump_data["guilds"] = dumped
 
@@ -192,7 +192,7 @@ cdef save_zones(dump_data: dict):
 
     while it != end:
         dumped.append({"id": deref(it).first,
-                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8")})
+                       "data": utils.rjdump(deref(it).second.rserialize()).decode("UTF-8")})
         inc(it)
     dump_data["zones"] = dumped
 
@@ -205,7 +205,7 @@ cdef save_areas(dump_data: dict):
 
     while it != end:
         dumped.append({"id": deref(it).first,
-                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8")})
+                       "data": utils.rjdump(deref(it).second.rserialize()).decode("UTF-8")})
         inc(it)
     dump_data["areas"] = dumped
 
@@ -218,7 +218,7 @@ cdef save_accounts(dump_data: dict):
 
     while it != end:
         dumped.append({"id": deref(it).first,
-                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8")})
+                       "data": utils.rjdump(deref(it).second.rserialize()).decode("UTF-8")})
         inc(it)
     dump_data["accounts"] = dumped
 
@@ -231,9 +231,9 @@ cdef save_players(dump_data: dict):
 
     while it != end:
         dumped.append({"id": deref(it).first,
-                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8")})
+                       "data": utils.rjdump(deref(it).second.rserialize()).decode("UTF-8")})
         inc(it)
-    dump_data["players"] = dumped
+    dump_data["playerCharacters"] = dumped
 
 cdef save_item_prototypes(dump_data: dict):
     # itemPrototypes
@@ -244,7 +244,7 @@ cdef save_item_prototypes(dump_data: dict):
 
     while it != end:
         dumped.append({"id": deref(it).first,
-                       "data": utils.jdump(deref(it).second.serializeProto()).decode("UTF-8")})
+                       "data": utils.rjdump(deref(it).second.rserializeProto()).decode("UTF-8")})
         inc(it)
     dump_data["itemPrototypes"] = dumped
 
@@ -257,7 +257,7 @@ cdef save_npc_prototypes(dump_data: dict):
 
     while it != end:
         dumped.append({"id": deref(it).first,
-                       "data": utils.jdump(deref(it).second.serializeProto()).decode("UTF-8")})
+                       "data": utils.rjdump(deref(it).second.rserializeProto()).decode("UTF-8")})
         inc(it)
     dump_data["npcPrototypes"] = dumped
 
@@ -306,7 +306,7 @@ cdef save_items(dump_data: dict):
         gen = ref.second.first
         c = ref.second.second
         dumped.append({"id": ref.first, "generation": gen, "vnum": c.vn,
-                       "data": utils.jdump(c.serializeInstance()).decode("UTF-8"),
+                       "data": utils.rjdump(c.rserializeInstance()).decode("UTF-8"),
                        "location": c.serializeLocation().decode("UTF-8"), "slot": c.worn_on,
                        "relations": utils.jdump(c.serializeRelations()).decode("UTF-8"),
                        "name": c.name.decode("UTF-8") if c.name is not NULL else "",
@@ -325,7 +325,7 @@ cdef save_scripts(dump_data: dict):
         gen = ref.second.first
         c = ref.second.second
         dumped.append({"id": ref.first, "generation": gen, "vnum": c.vn,
-                       "data": utils.jdump(c.serializeInstance()).decode("UTF-8"),
+                       "data": utils.rjdump(c.rserializeInstance()).decode("UTF-8"),
                        "location": c.serializeLocation().decode("UTF-8"),
                        "name": c.name.decode("UTF-8") if c.name is not NULL else "",
                        "num": c.order})
