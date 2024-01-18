@@ -3,9 +3,12 @@ from libcpp cimport bool
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libcpp.map cimport map
+cimport utils
 
 cdef extern from "dbat/structs.h":
     cdef cppclass account_data:
+        account_data()
+        account_data(const utils.json& j)
         int vn
         string name
         string email
@@ -25,6 +28,9 @@ cdef extern from "dbat/structs.h":
         bool checkPassword(const string& password)
         bool setPassword(const string& password)
         void modRPP(int amt)
+
+        utils.json serialize()
+        void deserialize(const utils.json& j)
 
 cdef extern from "dbat/account.h":
     account_data* createAccount(const string& name, const string& password) except+

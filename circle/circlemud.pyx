@@ -8,6 +8,7 @@ cimport db
 cimport structs
 cimport accounts
 cimport spells
+cimport utils
 
 import os
 import asyncio
@@ -20,6 +21,7 @@ import orjson
 
 from adventkai.portal.game_session import Capabilities
 from adventkai.core import Service
+from adventkai.server.database import dump_all
 
 from adventkai.game_session import (
     GameSession as BaseGameSession,
@@ -135,8 +137,223 @@ def initialize():
     comm.init_database()
     comm.init_zones()
 
-def run_loop_once(deltaTime: double):
+def run_loop_once(deltaTime: float):
     comm.run_loop_once(deltaTime)
+
+def trigger_save():
+    save_all()
+
+
+cdef save_rooms(dump_data: dict):
+    # rooms
+    it = db.world.begin()
+    end = db.world.end()
+
+    dumped = list()
+
+    while it != end:
+        dumped.append({"id": deref(it).first,
+                       "data": utils.rjdump(deref(it).second.rserialize()).decode("UTF-8")})
+        inc(it)
+    dump_data["rooms"] = dumped
+
+cdef save_shops(dump_data: dict):
+    # shops
+    it = db.shop_index.begin()
+    end = db.shop_index.end()
+
+    dumped = list()
+
+    while it != end:
+        dumped.append({"id": deref(it).first,
+                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8")})
+        inc(it)
+    dump_data["shops"] = dumped
+
+cdef save_guilds(dump_data: dict):
+    # guilds
+    it = db.guild_index.begin()
+    end = db.guild_index.end()
+
+    dumped = list()
+
+    while it != end:
+        dumped.append({"id": deref(it).first,
+                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8")})
+        inc(it)
+    dump_data["guilds"] = dumped
+
+cdef save_zones(dump_data: dict):
+    # zones
+    it = db.zone_table.begin()
+    end = db.zone_table.end()
+
+    dumped = list()
+
+    while it != end:
+        dumped.append({"id": deref(it).first,
+                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8")})
+        inc(it)
+    dump_data["zones"] = dumped
+
+cdef save_areas(dump_data: dict):
+    # areas
+    it = db.areas.begin()
+    end = db.areas.end()
+
+    dumped = list()
+
+    while it != end:
+        dumped.append({"id": deref(it).first,
+                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8")})
+        inc(it)
+    dump_data["areas"] = dumped
+
+cdef save_accounts(dump_data: dict):
+    # accounts
+    it = accounts.accounts.begin()
+    end = accounts.accounts.end()
+
+    dumped = list()
+
+    while it != end:
+        dumped.append({"id": deref(it).first,
+                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8")})
+        inc(it)
+    dump_data["accounts"] = dumped
+
+cdef save_players(dump_data: dict):
+    # players
+    it = db.players.begin()
+    end = db.players.end()
+
+    dumped = list()
+
+    while it != end:
+        dumped.append({"id": deref(it).first,
+                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8")})
+        inc(it)
+    dump_data["players"] = dumped
+
+cdef save_item_prototypes(dump_data: dict):
+    # itemPrototypes
+    it = db.obj_proto.begin()
+    end = db.obj_proto.end()
+
+    dumped = list()
+
+    while it != end:
+        dumped.append({"id": deref(it).first,
+                       "data": utils.jdump(deref(it).second.serializeProto()).decode("UTF-8")})
+        inc(it)
+    dump_data["itemPrototypes"] = dumped
+
+cdef save_npc_prototypes(dump_data: dict):
+    # npcPrototypes
+    it = db.mob_proto.begin()
+    end = db.mob_proto.end()
+
+    dumped = list()
+
+    while it != end:
+        dumped.append({"id": deref(it).first,
+                       "data": utils.jdump(deref(it).second.serializeProto()).decode("UTF-8")})
+        inc(it)
+    dump_data["npcPrototypes"] = dumped
+
+cdef save_dgscript_prototypes(dump_data: dict):
+    # dgScriptPrototypes
+    it = db.trig_index.begin()
+    end = db.trig_index.end()
+
+    dumped = list()
+
+    while it != end:
+        dumped.append({"id": deref(it).first,
+                       "data": utils.jdump(deref(it).second.serializeProto()).decode("UTF-8")})
+        inc(it)
+    dump_data["dgScriptPrototypes"] = dumped
+
+cdef save_characters(dump_data: dict):
+    # characters
+    it = db.uniqueCharacters.begin()
+    end = db.uniqueCharacters.end()
+
+    dumped = list()
+
+    while it != end:
+        ref = deref(it)
+        gen = ref.second.first
+        c = ref.second.second
+        dumped.append({"id": ref.first, "generation": gen, "vnum": c.vn,
+                       "data": utils.jdump(c.serializeInstance()).decode("UTF-8"),
+                       "location": utils.jdump(c.serializeLocation()).decode("UTF-8"),
+                       "relations": utils.jdump(c.serializeRelations()).decode("UTF-8"),
+                       "name": c.name.decode("UTF-8") if c.name is not NULL else "",
+                       "shortDesc": c.short_description if c.short_description is not NULL else ""})
+        inc(it)
+    dump_data["characters"] = dumped
+
+cdef save_items(dump_data: dict):
+    # items
+    it = db.uniqueObjects.begin()
+    end = db.uniqueObjects.end()
+
+    dumped = list()
+
+    while it != end:
+        ref = deref(it)
+        gen = ref.second.first
+        c = ref.second.second
+        dumped.append({"id": ref.first, "generation": gen, "vnum": c.vn,
+                       "data": utils.jdump(c.serializeInstance()).decode("UTF-8"),
+                       "location": c.serializeLocation().decode("UTF-8"), "slot": c.worn_on,
+                       "relations": utils.jdump(c.serializeRelations()).decode("UTF-8"),
+                       "name": c.name.decode("UTF-8") if c.name is not NULL else "",
+                       "shortDesc": c.short_description if c.short_description is not NULL else ""})
+        inc(it)
+    dump_data["items"] = dumped
+
+cdef save_scripts(dump_data: dict):
+    it = db.uniqueScripts.begin()
+    end = db.uniqueScripts.end()
+
+    dumped = list()
+
+    while it != end:
+        ref = deref(it)
+        gen = ref.second.first
+        c = ref.second.second
+        dumped.append({"id": ref.first, "generation": gen, "vnum": c.vn,
+                       "data": utils.jdump(c.serializeInstance()).decode("UTF-8"),
+                       "location": c.serializeLocation().decode("UTF-8"),
+                       "name": c.name.decode("UTF-8") if c.name is not NULL else "",
+                       "num": c.order})
+        inc(it)
+    dump_data["dgscripts"] = dumped
+
+cdef save_all():
+        dump_data = dict()
+        start_time = time.perf_counter()
+
+        save_rooms(dump_data)
+        save_shops(dump_data)
+        save_guilds(dump_data)
+        save_zones(dump_data)
+        save_areas(dump_data)
+        save_accounts(dump_data)
+        save_players(dump_data)
+        save_item_prototypes(dump_data)
+        save_npc_prototypes(dump_data)
+        save_dgscript_prototypes(dump_data)
+        save_characters(dump_data)
+        save_items(dump_data)
+        save_scripts(dump_data)
+
+        end_time = time.perf_counter()
+        print(f"Elapsed time to dump game: {end_time - start_time}")
+
+        asyncio.create_task(dump_all(dump_data))
 
 
 class GameService(Service):
@@ -148,14 +365,20 @@ class GameService(Service):
         initialize()
 
     async def start(self):
-        deltaTimeInSeconds: double = 0.1
-        loop_frequency: double = 0.1
+        deltaTimeInSeconds: float = 0.1
+        loop_frequency: float = 0.1
+        save_timer: float = 60.0 * 5.0
         last_time = time.perf_counter()
 
         while self.running:
             start = time.perf_counter()
             comm.run_loop_once(deltaTimeInSeconds)
             end = time.perf_counter()
+
+            save_timer -= deltaTimeInSeconds
+            if save_timer <= 0.0:
+                save_all()
+                save_timer = 60.0 * 5.0
 
             duration = end - start
             wait_time = loop_frequency - duration
@@ -164,6 +387,12 @@ class GameService(Service):
 
             await asyncio.sleep(wait_time)
             deltaTimeInSeconds = time.perf_counter() - start
+
+
+
+
+
+
 
 cdef class _AccountManager:
     async def retrieve_user(self, request, payload, *args, **kwargs):

@@ -57,13 +57,13 @@ with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
 INCLUDE_PATHS = [
     "dbat/include",
     "dbat/include/dbat",
-    CMAKE["Boost_INCLUDE_DIR"],
     CMAKE["spdlog_SOURCE_DIR"] + "/include",
     CMAKE["FMT_SOURCE_DIR"] + "/include",
     CMAKE["effolkronium_random_SOURCE_DIR"] + "/include",
     CMAKE["SQLiteCpp_SOURCE_DIR"] + "/include",
     CMAKE["sodium_SOURCE_DIR"] + "/libsodium/src/libsodium/include",
-    CMAKE["nlohmann_json_SOURCE_DIR"] + "/single_include"
+    CMAKE["nlohmann_json_SOURCE_DIR"] + "/single_include",
+    CMAKE["RapidJSON_SOURCE_DIR"] + "/include"
 ]
 
 LIBRARY_DIRS = [
@@ -83,7 +83,8 @@ extensions = [
         library_dirs=LIBRARY_DIRS,
         libraries=["circlemud", "SQLiteCpp", "fmtd", "sodium",
                    "sqlite3"],
-        language="c++"
+        language="c++",
+        extra_compile_args=["-std=c++23"]
     )
 ]
 

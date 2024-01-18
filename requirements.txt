@@ -7,3 +7,4 @@ rich
 aioquic
 sanic[http3]
 sanic-jwt
+databases[aiosqlite]
