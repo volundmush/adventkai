@@ -8,3 +8,4 @@ aioquic
 sanic[http3]
 sanic-jwt
 databases[aiosqlite]
+python-socketio[asyncio_client]

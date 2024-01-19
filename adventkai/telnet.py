@@ -14,8 +14,8 @@ from rich.color import ColorType
 from rich.console import Group
 
 from adventkai.utils import generate_name
-from .game_session import GameSession, ClientCommand
-from ..core import Service
+from adventkai.portal_session import PortalSession
+from adventkai.portal import Service
 
 
 class TelnetCode(IntEnum):
@@ -613,7 +613,7 @@ class EOROption(TelnetOption):
     code = TelnetCode.TELOPT_EOR
 
 
-class TelnetProtocol(GameSession):
+class TelnetProtocol(PortalSession):
     supported_options: list[typing.Type[TelnetOption], ...] = [
         #        SGAOption,
         NAWSOption,
@@ -723,7 +723,8 @@ class TelnetProtocol(GameSession):
 
             # Process the line
             if line != "IDLE":
-                await self.outgoing_queue.put(ClientCommand(text=line))
+                out_message = {"data": line}
+                await self.outgoing_queue.put(("Legacy.Command", out_message))
 
             # Remove the processed line from _app_data
             self._app_data = self._app_data[newline_pos + 1 :]
@@ -784,7 +785,9 @@ class TelnetProtocol(GameSession):
 
             try:
                 await asyncio.wait_for(asyncio.gather(*ops), 0.5)
+                await self.send_text("Successfully negotiated MUD features..")
             except asyncio.TimeoutError as err:
+                await self.send_text("Timed out waiting for telnet negotiation. Assuming defaults.")
                 pass
 
             await self.start()
@@ -816,7 +819,7 @@ class TelnetService(Service):
 
     @classmethod
     def is_valid(cls, settings):
-        if not (external := settings.INTERFACES.get("external", None)):
+        if not (external := settings.LISTEN_INTERFACE):
             return False
         if not (port := settings.TELNET.get("plain", None)):
             return False
@@ -828,7 +831,7 @@ class TelnetService(Service):
         self.protocol_class = adventkai.CLASSES["telnet_protocol"]
         settings = core.settings
 
-        self.external = settings.INTERFACES["external"]
+        self.external = settings.LISTEN_INTERFACE
         self.port = settings.TELNET.get("plain")
 
     async def start(self):
@@ -864,7 +867,7 @@ class TLSTelnetService(Service):
 
     @classmethod
     def is_valid(cls, settings):
-        if not (external := settings.INTERFACES.get("external", None)):
+        if not (external := settings.LISTEN_INTERFACE):
             return False
         if not (port := settings.TELNET.get("tls", None)):
             return False
@@ -882,7 +885,7 @@ class TLSTelnetService(Service):
         self.protocol_class = adventkai.CLASSES["telnet_protocol"]
         settings = core.settings
 
-        self.external = settings.INTERFACES["external"]
+        self.external = settings.LISTEN_INTERFACE
         self.port = settings.TELNET.get("tls")
 
         self.cert = settings.TLS.get("cert")

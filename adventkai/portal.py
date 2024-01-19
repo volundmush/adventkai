@@ -30,7 +30,7 @@ class Service:
 
 
 class Core:
-    app = None
+    app = "portal"
 
     def __init__(self, settings):
         self.settings = settings
@@ -91,14 +91,6 @@ class Core:
 
     def get_setting(self, name: str, default=None):
         return getattr(self.settings, f"{self.app.upper()}_{name.upper()}", default)
-
-    def _setup_hooks(self):
-        for k, v in self.get_setting("HOOKS", dict()).items():
-            for p in v:
-                adventkai.HOOKS[k].append(import_from_module(p))
-
-        for func in adventkai.HOOKS["early_launch"]:
-            func(self)
 
     def _generate_copyover_data(self) -> dict:
         copyover_data = None
@@ -166,7 +158,6 @@ class Core:
         The big kahuna that starts everything off.
         """
         self._setup_logging()
-        self._setup_hooks()
 
         loop = asyncio.get_event_loop()
         self.resolver = aiodns.DNSResolver(loop=loop)
@@ -185,16 +176,6 @@ class Core:
                 adventkai.CLASSES[k] = import_from_module(v)
         except Exception as e:
             logging.error(f"{e}")
-            logging.error(traceback.format_exc())
-            return
-
-        try:
-            # Register SENDABLE classes.
-            for module_path in self.settings.SENDABLE_CLASS_MODULES:
-                for v in callables_from_module(module_path).values():
-                    adventkai.SENDABLES[v.sendable_name] = v
-        except Exception as e:
-            logging.error(e)
             logging.error(traceback.format_exc())
             return
 
@@ -219,3 +200,14 @@ class Core:
         await asyncio.gather(*[service.start() for service in self.services.values()])
 
         await self._post_stop()
+
+    async def handle_new_protocol(self, protocol):
+        protocol.core = self
+        try:
+            self.game_sessions[protocol.capabilities.session_name] = protocol
+            await protocol.run()
+        except Exception as err:
+            logging.error(traceback.format_exc())
+            logging.error(err)
+        finally:
+            del self.game_sessions[protocol.capabilities.session_name]

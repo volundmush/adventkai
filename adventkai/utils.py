@@ -11,6 +11,38 @@ import types
 import traceback
 from inspect import getmembers, getmodule, getmro, ismodule, trace
 
+def setup_logging(app_name, log_dir):
+    log_file_path = os.path.join(log_dir, f"{app_name}.log")
+
+    LOGGING_CONFIG = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'standard': {
+                'format': '[%(asctime)s] %(message)s',
+                'datefmt': '%x %X',
+            },
+        },
+        'handlers': {
+            'file': {
+                'class': 'logging.handlers.TimedRotatingFileHandler',
+                'filename': log_file_path,
+                'encoding': 'utf-8',
+                'utc': True,
+                'when': 'midnight',
+                'interval': 1,
+                'backupCount': 14,
+                'formatter': 'standard',
+            },
+        },
+        'root': {
+            'handlers': ['file', 'rich'],
+            'level': 'INFO',
+        },
+    }
+
+    return logging.config.dictConfig(LOGGING_CONFIG)
+
 
 def utcnow():
     return datetime.now(timezone.utc)

@@ -6,6 +6,7 @@ from libcpp.set cimport set
 from libcpp.map cimport map
 from libcpp.vector cimport vector
 from libcpp.memory cimport shared_ptr
+from libcpp.pair cimport pair
 
 cdef extern from "dbat/net.h" namespace "net":
 
@@ -20,8 +21,8 @@ cdef extern from "dbat/net.h" namespace "net":
     cdef cppclass Connection:
         Connection(int64_t connId)
         int64_t connId
-        list[string] inQueue
-        list[string] outQueue
+        void queueMessage(const string& event, const string& data)
+        list[pair[string, string]] outQueue
         ProtocolCapabilities capabilities
         void onHeartbeat(double deltaTime)
 

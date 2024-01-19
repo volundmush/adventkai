@@ -18,69 +18,52 @@ import traceback
 import pickle
 import orjson
 
+from databases import Database
+database = Database('sqlite+aiosqlite:///example.db')
 
-from adventkai.portal.game_session import Capabilities
-from adventkai.core import Service
-from adventkai.server.database import dump_all
-
-from adventkai.game_session import (
-    GameSession as BaseGameSession,
-    ClientHello,
-    ClientCommand,
-    ClientGMCP,
-    ClientUpdate,
-    ClientDisconnect,
-    ServerDisconnect,
-    ServerUserdata,
-    ServerMSSP,
-    ServerText,
-    ServerGMCP
-)
 
 cdef class GameSession:
     cdef shared_ptr[net.Connection] conn
-    cdef object core
-    cdef object capabilities
-    cdef object userdata
-    cdef object ws
+    cdef object sid
+    cdef object sio
     cdef object running
     cdef object outgoing_queue
 
     def __cinit__(self):
         self.conn = net.newConnection()
 
-    def __init__(self, core, ws, data: ClientHello):
-        self.core = core
-        self.capabilities = data.capabilities
-        self.userdata = data.userdata
-        self.ws = ws
+    def __init__(self, sid, sio):
+        self.sid = sid
+        self.sio = sio
         self.running = True
         # This contains arbitrary data sent by the server which will be sent on a reconnect.
         self.outgoing_queue = asyncio.Queue()
 
     async def run(self):
-        await self.start()
-        await asyncio.gather(*[self.run_reader(), self.run_writer(), self.conn_pusher()])
+        while True:
+            if self.conn.get().outQueue.empty():
+                await asyncio.sleep(0.05)
+                continue
 
-    async def run_writer(self):
-        while data := await self.outgoing_queue.get():
+            message = self.conn.get().outQueue.front()
+            self.conn.get().outQueue.pop_front()
+
+            event = message.first.decode("UTF-8")
+            data = message.second.decode("UTF-8")
+            out_data = None
+
             try:
-                await self.ws.send(pickle.dumps(data))
-            except Exception as err:
-                logging.error(traceback.format_exc())
-                logging.error(err)
+                out_data = orjson.loads(data)
+            except orjson.JSONDecodeError:
+                continue
 
-    async def run_reader(self):
-        async for message in self.ws:
-            if isinstance(message, bytes):
-                msg = pickle.loads(message)
-                await self.handle_incoming_message(msg)
+            await self.sio.emit(event, to=self.sid, data=out_data)
 
-    async def start(self):
-        if self.userdata:
-            await self.start_resume()
-        else:
-            await self.start_fresh()
+    async def handle_disconnect(self):
+        pass
+
+    async def handle_event(self, event: str, message):
+        self.conn.get().queueMessage(event.encode(), orjson.dumps(message))
 
     async def start_resume(self):
         pass
@@ -95,36 +78,6 @@ cdef class GameSession:
 
     async def at_capability_change(self, capability: str, value):
         pass
-
-    async def handle_incoming_message(self, msg):
-        if (meth := getattr(msg, "at_server_receive", None)):
-            await meth(self)
-
-    async def handle_command(self, text: str):
-        message = {
-            "type": "Game.Command",
-            "data": text
-        }
-        self.conn.get().inQueue.push_back(orjson.dumps(message))
-
-    async def handle_gmcp(self, cmd: str, gmcp: str):
-        message = {"type": "Game.GMCP",
-                   "cmd": str}
-        if gmcp:
-            message["data"] = gmcp
-        self.conn.get().inQueue.push_back(orjson.dumps(message))
-
-    async def conn_pusher(self):
-        while True:
-            if self.conn.get().outQueue.empty():
-                await asyncio.sleep(0.05)
-                continue
-
-            message = self.conn.get().outQueue.front()
-            self.conn.get().outQueue.pop_front()
-
-            decoded = message.decode("UTF-8")
-            await self.outgoing_queue.put(decoded)
 
 
 def initialize():
@@ -355,43 +308,31 @@ cdef save_all():
 
         asyncio.create_task(dump_all(dump_data))
 
+RUNNING = True
 
-class GameService(Service):
-    def __init__(self, core):
-        super().__init__(core)
-        self.running: bool = True
+async def run_game_loop():
+    deltaTimeInSeconds: float = 0.1
+    loop_frequency: float = 0.1
+    save_timer: float = 60.0 * 5.0
+    last_time = time.perf_counter()
 
-    async def at_pre_start(self):
-        initialize()
+    while RUNNING:
+        start = time.perf_counter()
+        comm.run_loop_once(deltaTimeInSeconds)
+        end = time.perf_counter()
 
-    async def start(self):
-        deltaTimeInSeconds: float = 0.1
-        loop_frequency: float = 0.1
-        save_timer: float = 60.0 * 5.0
-        last_time = time.perf_counter()
+        #save_timer -= deltaTimeInSeconds
+        if save_timer <= 0.0:
+            save_all()
+            save_timer = 60.0 * 5.0
 
-        while self.running:
-            start = time.perf_counter()
-            comm.run_loop_once(deltaTimeInSeconds)
-            end = time.perf_counter()
+        duration = end - start
+        wait_time = loop_frequency - duration
+        if wait_time < 0:
+            wait_time = 0.001
 
-            save_timer -= deltaTimeInSeconds
-            if save_timer <= 0.0:
-                save_all()
-                save_timer = 60.0 * 5.0
-
-            duration = end - start
-            wait_time = loop_frequency - duration
-            if wait_time < 0:
-                wait_time = 0.001
-
-            await asyncio.sleep(wait_time)
-            deltaTimeInSeconds = time.perf_counter() - start
-
-
-
-
-
+        await asyncio.sleep(wait_time)
+        deltaTimeInSeconds = time.perf_counter() - start
 
 
 cdef class _AccountManager:
@@ -489,3 +430,84 @@ cdef class _SkillManager:
 
 
 skill_manager = _SkillManager()
+
+BASIC_TABLES = ["zones", "areas", "itemPrototypes", "npcPrototypes", "shops", "guilds",
+                "rooms", "dgScriptPrototypes", "accounts", "playerCharacters"]
+
+SCHEMA = [f"CREATE TABLE IF NOT EXISTS {table} (id INTEGER PRIMARY KEY, data TEXT NOT NULL);" for table in BASIC_TABLES]
+
+SCHEMA.append("""
+    CREATE TABLE IF NOT EXISTS characters (
+           id INTEGER PRIMARY KEY,
+           generation INTEGER NOT NULL,
+           vnum INTEGER NOT NULL DEFAULT -1,
+           name TEXT,
+           shortDesc TEXT,
+           data TEXT NOT NULL,
+           location TEXT NOT NULL DEFAULT '{}',
+           relations TEXT NOT NULL DEFAULT '{}'
+        );""")
+
+SCHEMA.append("""
+    CREATE TABLE IF NOT EXISTS items (
+           id INTEGER PRIMARY KEY,
+           generation INTEGER NOT NULL,
+           vnum INTEGER NOT NULL DEFAULT -1,
+           name TEXT,
+           shortDesc TEXT,
+           data TEXT NOT NULL,
+           location TEXT NOT NULL DEFAULT '',
+           slot INTEGER NOT NULL DEFAULT 0,
+           relations TEXT NOT NULL DEFAULT '{}'
+        );""")
+
+SCHEMA.append("""
+
+
+        CREATE TABLE IF NOT EXISTS dgScripts (
+        	id INTEGER PRIMARY KEY,
+           generation INTEGER NOT NULL,
+           vnum INTEGER NOT NULL DEFAULT -1,
+           name TEXT,
+        	data TEXT NOT NULL,
+           location TEXT NOT NULL,
+           num INTEGER NOT NULL
+        );
+""")
+
+SCHEMA.append("""
+        CREATE TABLE IF NOT EXISTS globalData (
+           name TEXT PRIMARY KEY,
+           data TEXT NOT NULL
+        );
+""")
+
+async def dump_all(data: dict):
+    start_time = time.perf_counter()
+    async with Database('sqlite+aiosqlite:///example.db') as db:
+        async with db.transaction():
+            for table in SCHEMA:
+                await db.execute(table)
+
+            for table in BASIC_TABLES:
+                if found_data := data.pop(table, None):
+                    query = f"INSERT INTO {table}(id, data) VALUES(:id, :data)"
+                    await db.execute_many(query, found_data)
+
+            if found_data := data.pop("characters", None):
+                query = ("INSERT INTO characters (id, generation, vnum, name, shortDesc, data, location, relations)"
+                         "VALUES(:id, :generation, :vnum, :name, :shortDesc, :data, :location, :relations)")
+                await db.execute_many(query, found_data)
+
+            if found_data := data.pop("items", None):
+                query = ("INSERT INTO items (id, generation, vnum, name, shortDesc, data, location, slot, relations)"
+                         "VALUES(:id, :generation, :vnum, :name, :shortDesc, :data, :location, :slot, :relations)")
+                await db.execute_many(query, found_data)
+
+            if found_data := data.pop("dgscripts", None):
+                query = ("INSERT INTO dgscripts (id, generation, vnum, name, data, location, num)"
+                         "VALUES(:id, :generation, :vnum, :name, :data, :location, :num)")
+                await db.execute_many(query, found_data)
+
+    end_time = time.perf_counter()
+    print(f"elapsed dump time: {end_time - start_time}")
