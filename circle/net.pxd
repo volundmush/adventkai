@@ -24,6 +24,7 @@ cdef extern from "dbat/net.h" namespace "net":
         void queueMessage(const string& event, const string& data)
         list[pair[string, string]] outQueue
         ProtocolCapabilities capabilities
+        bool running
         void onHeartbeat(double deltaTime)
 
     cdef map[int64_t, shared_ptr[Connection]] connections

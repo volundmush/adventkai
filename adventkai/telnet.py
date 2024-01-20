@@ -645,25 +645,40 @@ class TelnetProtocol(PortalSession):
         self.options: dict[int, TelnetOption] = {}
         self.compress_out = None
         self.decompress_in = None
+        self.remote_disconnect: bool = False
 
         for op in self.supported_options:
             self.options[op.code] = op(self)
 
+    async def on_disconnect(self):
+        self.remote_disconnect = True
+        self.task_group._abort()
+
     async def run(self):
         async with self.task_group as tg:
-            self.tasks["reader"] = tg.create_task(self.run_reader())
-            self.tasks["writer"] = tg.create_task(self.run_writer())
-            self.tasks["negotiation"] = tg.create_task(self.run_negotiation())
+            tg.create_task(self.run_reader())
+            tg.create_task(self.run_writer())
+            tg.create_task(self.run_negotiation())
 
+        if self.sio.connected:
+            await self.sio.disconnect()
+
+        if self.remote_disconnect:
+            self.writer.close()
 
     async def run_reader(self):
         try:
             while data := await self.reader.read(1024):
                 # concatenate data to self._raw_read_buffer.
                 await self.at_receive_raw_data(data)
+        except asyncio.CancelledError:
+            return
         except Exception as err:
             logging.error(traceback.format_exc())
             logging.error(err)
+
+        # we either errored or got an eof, either way we disconnect.
+        self.task_group._abort()
 
     async def at_receive_raw_data(self, data: bytes):
         """
@@ -772,6 +787,8 @@ class TelnetProtocol(PortalSession):
                         if op := self.options.get(data.option, None):
                             await op.at_send_subnegotiate(data)
                 await self.writer.drain()
+        except asyncio.CancelledError:
+            return
         except Exception as err:
             logging.error(traceback.format_exc())
             logging.error(err)
@@ -791,6 +808,8 @@ class TelnetProtocol(PortalSession):
                 pass
 
             await self.start()
+        except asyncio.CancelledError:
+            return
         except Exception as err:
             logging.error(traceback.format_exc())
             logging.error(err)

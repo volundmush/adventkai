@@ -40,13 +40,14 @@ cdef class GameSession:
         self.outgoing_queue = asyncio.Queue()
 
     async def run(self):
-        while True:
-            if self.conn.get().outQueue.empty():
+        c = self.conn.get()
+        while c.running:
+            if c.outQueue.empty():
                 await asyncio.sleep(0.05)
                 continue
 
-            message = self.conn.get().outQueue.front()
-            self.conn.get().outQueue.pop_front()
+            message = c.outQueue.front()
+            c.outQueue.pop_front()
 
             event = message.first.decode("UTF-8")
             data = message.second.decode("UTF-8")
@@ -59,8 +60,13 @@ cdef class GameSession:
 
             await self.sio.emit(event, to=self.sid, data=out_data)
 
+        if self.running:
+            # the disconnect came from C++.
+            await self.sio.disconnect(self.sid)
+
     async def handle_disconnect(self):
-        pass
+        self.running = False
+        net.deadConnections.insert(self.conn.get().connId)
 
     async def handle_event(self, event: str, message):
         self.conn.get().queueMessage(event.encode(), orjson.dumps(message))

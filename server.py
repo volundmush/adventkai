@@ -23,13 +23,11 @@ app.add_task(circlemud.run_game_loop())
 
 CONNECTIONS = dict()
 
-
 @sio.on('connect')
 async def connect_handler(sid, environ):
     new_conn = circlemud.GameSession(sid, sio)
     CONNECTIONS[sid] = new_conn
-    app.add_task(new_conn.run(), name=f"SocketIO {sid}")
-
+    app.add_task(new_conn.run(), name=f"Connection {sid}")
 
 @sio.on('disconnect')
 async def disconnect_handler(sid):
