@@ -17,6 +17,8 @@ import logging
 import traceback
 import pickle
 import orjson
+import pathlib
+from datetime import datetime
 
 from databases import Database
 database = Database('sqlite+aiosqlite:///example.db')
@@ -95,6 +97,16 @@ def initialize():
     os.chdir("lib")
     comm.init_database()
     comm.init_zones()
+
+def migrate():
+    comm.init_locale()
+    comm.init_log()
+    if not comm.init_sodium():
+        raise Exception("Sodium failed to initialize!")
+    db.load_config()
+    os.chdir("lib")
+    comm.migrate_db()
+    save_all()
 
 def run_loop_once(deltaTime: float):
     comm.run_loop_once(deltaTime)
@@ -216,7 +228,7 @@ cdef save_npc_prototypes(dump_data: dict):
 
     while it != end:
         dumped.append({"id": deref(it).first,
-                       "data": utils.rjdump(deref(it).second.rserializeProto()).decode("UTF-8")})
+                       "data": utils.jdump(deref(it).second.serializeProto()).decode("UTF-8")})
         inc(it)
     dump_data["npcPrototypes"] = dumped
 
@@ -291,6 +303,17 @@ cdef save_scripts(dump_data: dict):
         inc(it)
     dump_data["dgscripts"] = dumped
 
+cdef save_globaldata(dump_data: dict):
+    dumped = list()
+    dumped.append({"name": "time", "data": utils.jdump(db.time_info.serialize()).decode("UTF-8")})
+    dumped.append({"name": "weather", "data": utils.jdump(db.weather_info.serialize()).decode("UTF-8")})
+
+    found = db.world.find(0)
+    if found != db.world.end():
+        dumped.append({"name": "dgGlobals", "data": utils.jdump(deref(found).second.serializeDgVars()).decode("UTF-8")})
+
+    dump_data["globalData"] = dumped
+
 cdef save_all():
         dump_data = dict()
         start_time = time.perf_counter()
@@ -308,6 +331,7 @@ cdef save_all():
         save_characters(dump_data)
         save_items(dump_data)
         save_scripts(dump_data)
+        save_globaldata(dump_data)
 
         end_time = time.perf_counter()
         print(f"Elapsed time to dump game: {end_time - start_time}")
@@ -327,7 +351,7 @@ async def run_game_loop():
         comm.run_loop_once(deltaTimeInSeconds)
         end = time.perf_counter()
 
-        #save_timer -= deltaTimeInSeconds
+        save_timer -= deltaTimeInSeconds
         if save_timer <= 0.0:
             save_all()
             save_timer = 60.0 * 5.0
@@ -489,31 +513,57 @@ SCHEMA.append("""
 """)
 
 async def dump_all(data: dict):
-    start_time = time.perf_counter()
-    async with Database('sqlite+aiosqlite:///example.db') as db:
-        async with db.transaction():
-            for table in SCHEMA:
-                await db.execute(table)
+    current_path = pathlib.Path.cwd() / "dumps"
+    current_path.mkdir(parents=True, exist_ok=True)  # Create the directory if it doesn't exist
 
-            for table in BASIC_TABLES:
-                if found_data := data.pop(table, None):
-                    query = f"INSERT INTO {table}(id, data) VALUES(:id, :data)"
+    # Format current time as YYYYMMDDHHMMSS
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    dump_path = current_path / f"dump-{timestamp}.sqlite3"
+
+    start_time = time.perf_counter()
+    temp_file = "dumps/dump.sqlite3"
+    if os.path.exists(temp_file):
+        os.remove(temp_file)
+    errored = False
+    try:
+        async with Database(f'sqlite+aiosqlite:///{temp_file}') as db:
+            async with db.transaction():
+                for table in SCHEMA:
+                    await db.execute(table)
+
+                for table in BASIC_TABLES:
+                    if found_data := data.pop(table, None):
+                        query = f"INSERT INTO {table}(id, data) VALUES(:id, :data)"
+                        await db.execute_many(query, found_data)
+
+                if found_data := data.pop("characters", None):
+                    query = ("INSERT INTO characters (id, generation, vnum, name, shortDesc, data, location, relations)"
+                             "VALUES(:id, :generation, :vnum, :name, :shortDesc, :data, :location, :relations)")
                     await db.execute_many(query, found_data)
 
-            if found_data := data.pop("characters", None):
-                query = ("INSERT INTO characters (id, generation, vnum, name, shortDesc, data, location, relations)"
-                         "VALUES(:id, :generation, :vnum, :name, :shortDesc, :data, :location, :relations)")
-                await db.execute_many(query, found_data)
+                if found_data := data.pop("items", None):
+                    query = ("INSERT INTO items (id, generation, vnum, name, shortDesc, data, location, slot, relations)"
+                             "VALUES(:id, :generation, :vnum, :name, :shortDesc, :data, :location, :slot, :relations)")
+                    await db.execute_many(query, found_data)
 
-            if found_data := data.pop("items", None):
-                query = ("INSERT INTO items (id, generation, vnum, name, shortDesc, data, location, slot, relations)"
-                         "VALUES(:id, :generation, :vnum, :name, :shortDesc, :data, :location, :slot, :relations)")
-                await db.execute_many(query, found_data)
+                if found_data := data.pop("dgscripts", None):
+                    query = ("INSERT INTO dgscripts (id, generation, vnum, name, data, location, num)"
+                             "VALUES(:id, :generation, :vnum, :name, :data, :location, :num)")
+                    await db.execute_many(query, found_data)
 
-            if found_data := data.pop("dgscripts", None):
-                query = ("INSERT INTO dgscripts (id, generation, vnum, name, data, location, num)"
-                         "VALUES(:id, :generation, :vnum, :name, :data, :location, :num)")
-                await db.execute_many(query, found_data)
+                if found_data := data.pop("globalData", None):
+                    query = ("INSERT INTO globalData (name, data)"
+                             "VALUES(:name, :data)")
+                    await db.execute_many(query, found_data)
+    except Exception as err:
+        errored = True
+        os.remove(temp_file)
+        logging.exception()
 
-    end_time = time.perf_counter()
-    print(f"elapsed dump time: {end_time - start_time}")
+    if not errored:
+        end_time = time.perf_counter()
+        print(f"elapsed dump time: {end_time - start_time}")
+        os.rename(temp_file, dump_path)
+        jrnl = f"{temp_file}-journal"
+        if os.path.exists(jrnl):
+            os.remove(jrnl)

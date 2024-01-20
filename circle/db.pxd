@@ -10,12 +10,16 @@ from libcpp.unordered_map cimport unordered_map
 from libcpp.vector cimport vector
 from libcpp.memory cimport shared_ptr
 cimport structs
+cimport utils
 
 ctypedef structs.char_data* char_data_ptr
 ctypedef structs.obj_data* obj_data_ptr
 ctypedef structs.trig_data* trig_data_ptr
 
 cdef extern from "dbat/db.h":
+    structs.time_info_data time_info
+    structs.weather_data weather_info
+
     void load_config()
     void migrate_db()
 

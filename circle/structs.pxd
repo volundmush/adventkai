@@ -71,6 +71,8 @@ cdef extern from "dbat/structs.h":
         utils.json serialize()
         utils.Document rserialize()
 
+        utils.json serializeDgVars()
+
     cdef cppclass time_info_data:
         void deserialize(const utils.json& j)
         utils.json serialize()

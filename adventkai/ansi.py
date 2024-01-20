@@ -67,22 +67,7 @@ RANDOM_CODES = ["b", "g", "c", "r", "m", "y", "w", "B", "G", "C", "R", "M", "W",
 
 RE_COLOR = re.compile(r"@(n|d|D|b|B|g|G|c|C|r|R|m|M|y|Y|w|W|x|0|1|2|3|4|5|6|7|l|o|u|e|@|\[\d+\])")
 
-
-def CircleStrip(entry: str) -> str:
-
-    def replace_color(match_obj):
-        m = match_obj.group(1)
-        match m:
-            case "@":
-                return "@"
-            case _:
-                return ""
-
-    return RE_COLOR.sub(replace_color, entry)
-
-
-def circle_to_rich(entry: str, colors: dict = None) -> Text:
-
+def circle_to_ansi(entry: str, colors: dict = None) -> str:
     custom_colors = DEFAULT_COLORS.copy()
     if colors:
         custom_colors.update(colors)
@@ -106,6 +91,22 @@ def circle_to_rich(entry: str, colors: dict = None) -> Text:
                     ansi_codes = COLOR_MAP[m]
         return f"\x1b[{ansi_codes}m"
 
-    out_text = RE_COLOR.sub(replace_color, entry)
+    return RE_COLOR.sub(replace_color, entry)
 
-    return Text("\n").join(AnsiDecoder().decode(out_text))
+
+def circle_to_rich(entry: str, colors: dict = None) -> Text:
+    return Text("\n").join(AnsiDecoder().decode(circle_to_ansi(entry, colors=colors)))
+
+
+
+def CircleStrip(entry: str) -> str:
+
+    def replace_color(match_obj):
+        m = match_obj.group(1)
+        match m:
+            case "@":
+                return "@"
+            case _:
+                return ""
+
+    return RE_COLOR.sub(replace_color, entry)

@@ -1,6 +1,7 @@
-from sanic import Sanic
+from sanic import Sanic, response
 from sanic_jwt import Initialize
 import socketio
+import os
 
 import circlemud
 from circlemud import account_manager
@@ -8,11 +9,23 @@ from circlemud import account_manager
 from adventkai import settings
 from adventkai import api
 
+# Get the absolute path to the 'lib/webroot/' directory
+webroot_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'lib', 'webroot'))
+
 sio = socketio.AsyncServer(async_mode="sanic", namespaces='*')
 app = Sanic(settings.NAME)
 Initialize(app, claim_aud=settings.HOSTNAME, authenticate=account_manager.authenticate, retrieve_user=account_manager.retrieve_user)
 sio.attach(app)
 app.blueprint(api.api)
+
+# Static file serving
+app.static('/static', os.path.join(webroot_path, 'static'))
+
+# Route to serve index.html
+@app.route('/')
+async def index(request):
+    return await response.file(os.path.join(webroot_path, 'index.html'))
+
 
 # Link in the C++ game library.
 @app.before_server_start
