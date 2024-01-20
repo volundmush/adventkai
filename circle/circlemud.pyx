@@ -51,8 +51,8 @@ cdef class GameSession:
             message = c.outQueue.front()
             c.outQueue.pop_front()
 
-            event = message.first.decode("UTF-8")
-            data = message.second.decode("UTF-8")
+            event = message.first.decode("UTF-8", errors='ignore')
+            data = message.second.decode("UTF-8", errors='ignore')
             out_data = None
 
             try:
@@ -124,7 +124,7 @@ cdef save_rooms(dump_data: dict):
 
     while it != end:
         dumped.append({"id": deref(it).first,
-                       "data": utils.rjdump(deref(it).second.rserialize()).decode("UTF-8")})
+                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8", errors='ignore')})
         inc(it)
     dump_data["rooms"] = dumped
 
@@ -137,7 +137,7 @@ cdef save_shops(dump_data: dict):
 
     while it != end:
         dumped.append({"id": deref(it).first,
-                       "data": utils.rjdump(deref(it).second.rserialize()).decode("UTF-8")})
+                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8", errors='ignore')})
         inc(it)
     dump_data["shops"] = dumped
 
@@ -150,7 +150,7 @@ cdef save_guilds(dump_data: dict):
 
     while it != end:
         dumped.append({"id": deref(it).first,
-                       "data": utils.rjdump(deref(it).second.rserialize()).decode("UTF-8")})
+                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8", errors='ignore')})
         inc(it)
     dump_data["guilds"] = dumped
 
@@ -163,7 +163,7 @@ cdef save_zones(dump_data: dict):
 
     while it != end:
         dumped.append({"id": deref(it).first,
-                       "data": utils.rjdump(deref(it).second.rserialize()).decode("UTF-8")})
+                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8", errors='ignore')})
         inc(it)
     dump_data["zones"] = dumped
 
@@ -176,7 +176,7 @@ cdef save_areas(dump_data: dict):
 
     while it != end:
         dumped.append({"id": deref(it).first,
-                       "data": utils.rjdump(deref(it).second.rserialize()).decode("UTF-8")})
+                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8", errors='ignore')})
         inc(it)
     dump_data["areas"] = dumped
 
@@ -189,7 +189,7 @@ cdef save_accounts(dump_data: dict):
 
     while it != end:
         dumped.append({"id": deref(it).first,
-                       "data": utils.rjdump(deref(it).second.rserialize()).decode("UTF-8")})
+                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8", errors='ignore')})
         inc(it)
     dump_data["accounts"] = dumped
 
@@ -202,7 +202,7 @@ cdef save_players(dump_data: dict):
 
     while it != end:
         dumped.append({"id": deref(it).first,
-                       "data": utils.rjdump(deref(it).second.rserialize()).decode("UTF-8")})
+                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8", errors='ignore')})
         inc(it)
     dump_data["playerCharacters"] = dumped
 
@@ -215,7 +215,7 @@ cdef save_item_prototypes(dump_data: dict):
 
     while it != end:
         dumped.append({"id": deref(it).first,
-                       "data": utils.rjdump(deref(it).second.rserializeProto()).decode("UTF-8")})
+                       "data": utils.jdump(deref(it).second.serializeProto()).decode("UTF-8", errors='ignore')})
         inc(it)
     dump_data["itemPrototypes"] = dumped
 
@@ -228,7 +228,7 @@ cdef save_npc_prototypes(dump_data: dict):
 
     while it != end:
         dumped.append({"id": deref(it).first,
-                       "data": utils.jdump(deref(it).second.serializeProto()).decode("UTF-8")})
+                       "data": utils.jdump(deref(it).second.serializeProto()).decode("UTF-8", errors='ignore')})
         inc(it)
     dump_data["npcPrototypes"] = dumped
 
@@ -241,7 +241,7 @@ cdef save_dgscript_prototypes(dump_data: dict):
 
     while it != end:
         dumped.append({"id": deref(it).first,
-                       "data": utils.jdump(deref(it).second.serializeProto()).decode("UTF-8")})
+                       "data": utils.jdump(deref(it).second.serializeProto()).decode("UTF-8", errors='ignore')})
         inc(it)
     dump_data["dgScriptPrototypes"] = dumped
 
@@ -257,10 +257,10 @@ cdef save_characters(dump_data: dict):
         gen = ref.second.first
         c = ref.second.second
         dumped.append({"id": ref.first, "generation": gen, "vnum": c.vn,
-                       "data": utils.jdump(c.serializeInstance()).decode("UTF-8"),
-                       "location": utils.jdump(c.serializeLocation()).decode("UTF-8"),
-                       "relations": utils.jdump(c.serializeRelations()).decode("UTF-8"),
-                       "name": c.name.decode("UTF-8") if c.name is not NULL else "",
+                       "data": utils.jdump(c.serializeInstance()).decode("UTF-8", errors='ignore'),
+                       "location": utils.jdump(c.serializeLocation()).decode("UTF-8", errors='ignore'),
+                       "relations": utils.jdump(c.serializeRelations()).decode("UTF-8", errors='ignore'),
+                       "name": c.name.decode("UTF-8", errors='ignore') if c.name is not NULL else "",
                        "shortDesc": c.short_description if c.short_description is not NULL else ""})
         inc(it)
     dump_data["characters"] = dumped
@@ -277,10 +277,10 @@ cdef save_items(dump_data: dict):
         gen = ref.second.first
         c = ref.second.second
         dumped.append({"id": ref.first, "generation": gen, "vnum": c.vn,
-                       "data": utils.rjdump(c.rserializeInstance()).decode("UTF-8"),
-                       "location": c.serializeLocation().decode("UTF-8"), "slot": c.worn_on,
-                       "relations": utils.jdump(c.serializeRelations()).decode("UTF-8"),
-                       "name": c.name.decode("UTF-8") if c.name is not NULL else "",
+                       "data": utils.jdump(c.serializeInstance()).decode("UTF-8", errors='ignore'),
+                       "location": c.serializeLocation().decode("UTF-8", errors='ignore'), "slot": c.worn_on,
+                       "relations": utils.jdump(c.serializeRelations()).decode("UTF-8", errors='ignore'),
+                       "name": c.name.decode("UTF-8", errors='ignore') if c.name is not NULL else "",
                        "shortDesc": c.short_description if c.short_description is not NULL else ""})
         inc(it)
     dump_data["items"] = dumped
@@ -296,21 +296,21 @@ cdef save_scripts(dump_data: dict):
         gen = ref.second.first
         c = ref.second.second
         dumped.append({"id": ref.first, "generation": gen, "vnum": c.vn,
-                       "data": utils.rjdump(c.rserializeInstance()).decode("UTF-8"),
-                       "location": c.serializeLocation().decode("UTF-8"),
-                       "name": c.name.decode("UTF-8") if c.name is not NULL else "",
+                       "data": utils.jdump(c.serializeInstance()).decode("UTF-8", errors='ignore'),
+                       "location": c.serializeLocation().decode("UTF-8", errors='ignore'),
+                       "name": c.name.decode("UTF-8", errors='ignore') if c.name is not NULL else "",
                        "num": c.order})
         inc(it)
     dump_data["dgscripts"] = dumped
 
 cdef save_globaldata(dump_data: dict):
     dumped = list()
-    dumped.append({"name": "time", "data": utils.jdump(db.time_info.serialize()).decode("UTF-8")})
-    dumped.append({"name": "weather", "data": utils.jdump(db.weather_info.serialize()).decode("UTF-8")})
+    dumped.append({"name": "time", "data": utils.jdump(db.time_info.serialize()).decode("UTF-8", errors='ignore')})
+    dumped.append({"name": "weather", "data": utils.jdump(db.weather_info.serialize()).decode("UTF-8", errors='ignore')})
 
     found = db.world.find(0)
     if found != db.world.end():
-        dumped.append({"name": "dgGlobals", "data": utils.jdump(deref(found).second.serializeDgVars()).decode("UTF-8")})
+        dumped.append({"name": "dgGlobals", "data": utils.jdump(deref(found).second.serializeDgVars()).decode("UTF-8", errors='ignore')})
 
     dump_data["globalData"] = dumped
 
@@ -375,9 +375,9 @@ cdef class _AccountManager:
                 return None
             user = deref(found).second
 
-            out = {"user_id": user.vn, "username": user.name.decode("UTF-8"), "adminLevel": user.adminLevel}
+            out = {"user_id": user.vn, "username": user.name.decode("UTF-8", errors='ignore'), "adminLevel": user.adminLevel}
             if not user.email.empty():
-                out["email"] = user.email.decode("UTF-8")
+                out["email"] = user.email.decode("UTF-8", errors='ignore')
 
             return out
 
@@ -399,9 +399,9 @@ cdef class _AccountManager:
         if not user.checkPassword(password.encode()):
             raise exceptions.AuthenticationFailed("Incorrect credentials.")
 
-        out = {"user_id": user.vn, "username": user.name.decode("UTF-8"), "adminLevel": user.adminLevel}
+        out = {"user_id": user.vn, "username": user.name.decode("UTF-8", errors='ignore'), "adminLevel": user.adminLevel}
         if not user.email.empty():
-            out["email"] = user.email.decode("UTF-8")
+            out["email"] = user.email.decode("UTF-8", errors='ignore')
         if not user.characters.empty():
             out["characters"] = [x for x in user.characters]
 
@@ -429,7 +429,7 @@ cdef class _SkillManager:
         }
         spell: spells.spell_info_type = spells.spell_info[num]
         if spell.name is not NULL:
-            out["name"] = spell.name.decode("UTF-8")
+            out["name"] = spell.name.decode("UTF-8", errors='ignore')
         return out
 
     def get_range(self, start: int, end: int):
@@ -524,6 +524,9 @@ async def dump_all(data: dict):
     temp_file = "dumps/dump.sqlite3"
     if os.path.exists(temp_file):
         os.remove(temp_file)
+    jrnl = f"{temp_file}-journal"
+    if os.path.exists(jrnl):
+        os.remove(jrnl)
     errored = False
     try:
         async with Database(f'sqlite+aiosqlite:///{temp_file}') as db:

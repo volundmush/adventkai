@@ -145,7 +145,12 @@ class PortalSession:
     async def start(self):
         headers = {"X-FORWARDED-FOR": self.capabilities.host_address}
         await self.sio.connect(settings.PORTAL_URL_TO_WS, wait=True, headers=headers)
-        await self.run_messaging()
+        await asyncio.gather(*[self.run_messaging(), self.run_idler()])
+
+    async def run_idler(self):
+        while True:
+            await asyncio.sleep(5.0)
+            await self.sio.emit("idle", data=dict())
 
     async def run_messaging(self):
         while (msg := await self.outgoing_queue.get()):

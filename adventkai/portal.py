@@ -41,7 +41,6 @@ class Core:
         self.cold_start = True
         self.ep = None
         self.game_sessions: dict[str, "GameSession"] = dict()
-        self.resolver = None
 
     def copyover(self):
         data_dict = dict()
@@ -158,9 +157,6 @@ class Core:
         The big kahuna that starts everything off.
         """
         self._setup_logging()
-
-        loop = asyncio.get_event_loop()
-        self.resolver = aiodns.DNSResolver(loop=loop)
 
         self.copyover_data = self._generate_copyover_data()
 
