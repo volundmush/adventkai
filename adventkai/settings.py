@@ -5,7 +5,6 @@ from collections import defaultdict
 # The game name
 NAME = "adventkai"
 
-
 # TLS data - this must be paths to PEM and KEY files.
 TLS = {"ca": "ca.pem", "cert": "cert.pem", "key": "key.key"}
 
@@ -15,7 +14,7 @@ LISTEN_INTERFACE = "0.0.0.0"
 # external ports used by telnet connections.
 # Omit them to disable.
 TELNET = {
-    "plain": 7999,
+    "plain": 1280,
     #    "tls": 7998
 }
 
@@ -27,10 +26,10 @@ SSH = 7995
 # external ports used by the webserver
 # Omit them to disable.
 WEBSERVER_INTERFACE = "0.0.0.0"
-WEBSERVER_PORT = 6800
+WEBSERVER_PORT = 8000
 
 # PORTAL_WS
-PORTAL_URL_TO_WS = "http://127.0.0.1:6800/"
+PORTAL_URL_TO_WS = "http://127.0.0.1:8000/"
 
 # The hostname to use for the website.
 HOSTNAME = "example.com"
@@ -54,5 +53,5 @@ LOG_DIR = "logs"
 SERVER_LOG_DAY_ROTATION = 7
 SERVER_LOG_MAX_SIZE = 1000000
 
-
 CLIENT_DEFAULT_WIDTH = 78
+
