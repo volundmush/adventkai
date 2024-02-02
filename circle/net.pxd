@@ -1,5 +1,5 @@
 from libcpp cimport bool
-from libc.stdint cimport int64_t, int16_t
+from libc.stdint cimport int64_t, int16_t, uint8_t
 from libcpp.string cimport string
 from libcpp.list cimport list
 from libcpp.set cimport set
@@ -9,6 +9,12 @@ from libcpp.memory cimport shared_ptr
 from libcpp.pair cimport pair
 
 cdef extern from "dbat/net.h" namespace "net":
+
+    cdef enum class ConnectionState:
+        Negotiating = 0
+        Pending = 1
+        Connected = 2
+        Dead = 3
 
     cdef cppclass ProtocolCapabilities:
         string protocolName
@@ -25,10 +31,10 @@ cdef extern from "dbat/net.h" namespace "net":
         list[pair[string, string]] outQueue
         ProtocolCapabilities capabilities
         bool running
+        ConnectionState state
         void onHeartbeat(double deltaTime)
 
-    cdef map[int64_t, shared_ptr[Connection]] connections
-    cdef set[int64_t] pendingConnections
-    cdef set[int64_t] deadConnections
+    cdef map[string, shared_ptr[Connection]] connections
 
-    cdef shared_ptr[Connection] newConnection()
+
+    cdef shared_ptr[Connection] newConnection(const string& connID)

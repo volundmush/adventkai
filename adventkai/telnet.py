@@ -739,7 +739,7 @@ class TelnetProtocol(PortalSession):
             # Process the line
             if line != "IDLE":
                 out_message = {"data": line}
-                await self.outgoing_queue.put(("Legacy.Command", out_message))
+                await self.outgoing_queue.put(("Game.Command", out_message))
 
             # Remove the processed line from _app_data
             self._app_data = self._app_data[newline_pos + 1 :]

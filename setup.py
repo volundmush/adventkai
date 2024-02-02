@@ -1,5 +1,5 @@
+import glob
 import os
-import sys
 from setuptools import setup, find_packages, Extension
 from Cython.Build import cythonize
 
@@ -7,15 +7,6 @@ os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 OS_WINDOWS = os.name == "nt"
 
-CMAKE = dict()
-with open("cmake-build/CMakeCache.txt") as f:
-    for line in f.readlines():
-        if line.startswith("#") or line.startswith("//"):
-            continue
-        if ":" in line:
-            key, value = line.split(":", 1)
-            line_type, val = value.split("=", 1)
-            CMAKE[key] = val.strip()
 
 def get_requirements():
     """
@@ -56,35 +47,21 @@ with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
 
 INCLUDE_PATHS = [
     "dbat/include",
-    "dbat/include/dbat",
-    CMAKE["spdlog_SOURCE_DIR"] + "/include",
-    CMAKE["FMT_SOURCE_DIR"] + "/include",
-    CMAKE["effolkronium_random_SOURCE_DIR"] + "/include",
-    CMAKE["SQLiteCpp_SOURCE_DIR"] + "/include",
-    CMAKE["sodium_SOURCE_DIR"] + "/libsodium/src/libsodium/include",
-    CMAKE["nlohmann_json_SOURCE_DIR"] + "/single_include",
-    CMAKE["RapidJSON_SOURCE_DIR"] + "/include"
 ]
 
 LIBRARY_DIRS = [
-    "dbat/bin",
-    CMAKE["SQLiteCpp_BINARY_DIR"],
-    CMAKE["effolkronium_random_BINARY_DIR"],
-    CMAKE["sodium_BINARY_DIR"],
-    CMAKE["FMT_BINARY_DIR"]
-
+    "dbat/bin"
 ]
 
 extensions = [
     Extension(
         "circlemud",
-        sources=["circle/circlemud.pyx"],
+        sources=glob.glob("circle/*.pyx"),
         include_dirs=INCLUDE_PATHS,
         library_dirs=LIBRARY_DIRS,
-        libraries=["circlemud", "SQLiteCpp", "fmtd", "sodium",
-                   "sqlite3"],
+        libraries=["circlemud"],
         language="c++",
-        extra_compile_args=["-std=c++23"]
+        extra_compile_args=["-std=c++23", "-w", "-fpermissive"]
     )
 ]
 
@@ -118,5 +95,5 @@ setup(
         "Source": "https://github.com/volundmush/adventkai",
         "Issue tracker": "https://github.com/volundmush/adventkai/issues",
     },
-    ext_modules=cythonize(extensions, include_path=INCLUDE_PATHS)
+    ext_modules=cythonize(extensions, include_path=INCLUDE_PATHS, nthreads=os.cpu_count())
 )

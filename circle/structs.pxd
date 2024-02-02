@@ -15,7 +15,6 @@ cdef extern from "dbat/structs.h":
     cdef cppclass area_data:
         area_data(const utils.json& j)
         utils.json serialize()
-        utils.Document rserialize()
 
     cdef cppclass player_data:
         player_data(const utils.json& j)
@@ -24,7 +23,6 @@ cdef extern from "dbat/structs.h":
         accounts.account_data * account
 
         utils.json serialize()
-        utils.Document rserialize()
 
     cdef cppclass extra_descr_data:
         char* keyword
@@ -50,9 +48,7 @@ cdef extern from "dbat/structs.h":
     cdef cppclass obj_data(unit_data):
         obj_data(const utils.json& j)
         utils.json serializeInstance()
-        utils.Document rserializeInstance()
         utils.json serializeProto()
-        utils.Document rserializeProto()
         string serializeLocation()
         utils.json serializeRelations()
 
@@ -69,7 +65,6 @@ cdef extern from "dbat/structs.h":
         room_data(const utils.json& j)
 
         utils.json serialize()
-        utils.Document rserialize()
 
         utils.json serializeDgVars()
 
@@ -79,11 +74,8 @@ cdef extern from "dbat/structs.h":
 
     cdef cppclass char_data(unit_data):
         char_data(const utils.json& j)
-        utils.Document rserializeBase()
         utils.json serializeInstance()
-        utils.Document rserializeInstance()
         utils.json serializeProto()
-        utils.Document rserializeProto()
         utils.json serializePlayer()
         utils.json serializeLocation()
         utils.json serializeRelations()
@@ -103,21 +95,18 @@ cdef extern from "dbat/structs.h":
         int vn
         trig_data *proto
         utils.json serializeProto()
-        utils.Document rserializeProto()
 
 
 cdef extern from "dbat/guild.h":
     cdef cppclass guild_data:
         guild_data(const utils.json& j)
         utils.json serialize()
-        utils.Document rserialize()
 
 
 cdef extern from "dbat/shop.h":
     cdef cppclass shop_data:
         shop_data(const utils.json& j)
         utils.json serialize()
-        utils.Document rserialize()
 
 
 cdef extern from "dbat/dg_scripts.h":
@@ -127,9 +116,7 @@ cdef extern from "dbat/dg_scripts.h":
         int vn
         char* name
         utils.json serializeProto()
-        utils.Document rserializeProto()
         utils.json serializeInstance()
-        utils.Document rserializeInstance()
         string serializeLocation()
 
         void deserializeInstance(const utils.json& j)
@@ -142,4 +129,3 @@ cdef extern from "dbat/db.h":
     cdef cppclass zone_data:
         zone_data(const utils.json& j)
         utils.json serialize()
-        utils.Document rserialize()

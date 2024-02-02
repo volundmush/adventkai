@@ -30,7 +30,6 @@ cdef extern from "dbat/structs.h":
         void modRPP(int amt)
 
         utils.json serialize()
-        utils.Document rserialize()
         void deserialize(const utils.json& j)
 
 cdef extern from "dbat/account.h":

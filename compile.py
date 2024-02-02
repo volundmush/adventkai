@@ -3,7 +3,6 @@ import sys
 import os
 import shutil
 import subprocess
-import multiprocessing
 import platform
 
 
@@ -45,14 +44,14 @@ def main(build_mode):
     build_args = [
         'cmake',
         '--build', out_folder,
-        '--', f'-j{multiprocessing.cpu_count()}'
+        '--', f'-j{os.cpu_count()}'
     ]
 
     subprocess.run(cmake_args, check=True)
     subprocess.run(build_args, check=True)
 
     # Build Python extension
-    subprocess.run([sys.executable, 'setup.py', 'build_ext', '--inplace'], check=True)
+    subprocess.run([sys.executable, 'setup.py', 'build_ext', '--inplace', "--parallel"], check=True)
 
 
 if __name__ == '__main__':

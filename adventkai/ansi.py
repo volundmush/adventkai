@@ -98,7 +98,6 @@ def circle_to_rich(entry: str, colors: dict = None) -> Text:
     return Text("\n").join(AnsiDecoder().decode(circle_to_ansi(entry, colors=colors)))
 
 
-
 def CircleStrip(entry: str) -> str:
 
     def replace_color(match_obj):

@@ -20,26 +20,18 @@ import orjson
 import pathlib
 from datetime import datetime
 
-from databases import Database
-database = Database('sqlite+aiosqlite:///example.db')
-
 
 cdef class GameSession:
     cdef shared_ptr[net.Connection] conn
     cdef object sid
     cdef object sio
     cdef object running
-    cdef object outgoing_queue
-
-    def __cinit__(self):
-        self.conn = net.newConnection()
 
     def __init__(self, sid, sio):
         self.sid = sid
         self.sio = sio
         self.running = True
-        # This contains arbitrary data sent by the server which will be sent on a reconnect.
-        self.outgoing_queue = asyncio.Queue()
+        self.conn = net.newConnection(sid.encode())
 
     async def run(self):
         c = self.conn.get()
@@ -53,7 +45,6 @@ cdef class GameSession:
 
             event = message.first.decode("UTF-8", errors='ignore')
             data = message.second.decode("UTF-8", errors='ignore')
-            out_data = None
 
             try:
                 out_data = orjson.loads(data)
@@ -68,7 +59,7 @@ cdef class GameSession:
 
     async def handle_disconnect(self):
         self.running = False
-        net.deadConnections.insert(self.conn.get().connId)
+        self.conn.get().state = net.ConnectionState.Dead
 
     async def handle_event(self, event: str, message):
         self.conn.get().queueMessage(event.encode(), orjson.dumps(message))
@@ -90,9 +81,6 @@ cdef class GameSession:
 
 def initialize():
     comm.init_locale()
-    comm.init_log()
-    if not comm.init_sodium():
-        raise Exception("Sodium failed to initialize!")
     db.load_config()
     os.chdir("lib")
     comm.init_database()
@@ -100,243 +88,14 @@ def initialize():
 
 def migrate():
     comm.init_locale()
-    comm.init_log()
-    if not comm.init_sodium():
-        raise Exception("Sodium failed to initialize!")
     db.load_config()
     os.chdir("lib")
     comm.migrate_db()
-    save_all()
+    comm.runSave()
 
 def run_loop_once(deltaTime: float):
     comm.run_loop_once(deltaTime)
 
-def trigger_save():
-    save_all()
-
-
-cdef save_rooms(dump_data: dict):
-    # rooms
-    it = db.world.begin()
-    end = db.world.end()
-
-    dumped = list()
-
-    while it != end:
-        dumped.append({"id": deref(it).first,
-                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8", errors='ignore')})
-        inc(it)
-    dump_data["rooms"] = dumped
-
-cdef save_shops(dump_data: dict):
-    # shops
-    it = db.shop_index.begin()
-    end = db.shop_index.end()
-
-    dumped = list()
-
-    while it != end:
-        dumped.append({"id": deref(it).first,
-                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8", errors='ignore')})
-        inc(it)
-    dump_data["shops"] = dumped
-
-cdef save_guilds(dump_data: dict):
-    # guilds
-    it = db.guild_index.begin()
-    end = db.guild_index.end()
-
-    dumped = list()
-
-    while it != end:
-        dumped.append({"id": deref(it).first,
-                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8", errors='ignore')})
-        inc(it)
-    dump_data["guilds"] = dumped
-
-cdef save_zones(dump_data: dict):
-    # zones
-    it = db.zone_table.begin()
-    end = db.zone_table.end()
-
-    dumped = list()
-
-    while it != end:
-        dumped.append({"id": deref(it).first,
-                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8", errors='ignore')})
-        inc(it)
-    dump_data["zones"] = dumped
-
-cdef save_areas(dump_data: dict):
-    # areas
-    it = db.areas.begin()
-    end = db.areas.end()
-
-    dumped = list()
-
-    while it != end:
-        dumped.append({"id": deref(it).first,
-                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8", errors='ignore')})
-        inc(it)
-    dump_data["areas"] = dumped
-
-cdef save_accounts(dump_data: dict):
-    # accounts
-    it = accounts.accounts.begin()
-    end = accounts.accounts.end()
-
-    dumped = list()
-
-    while it != end:
-        dumped.append({"id": deref(it).first,
-                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8", errors='ignore')})
-        inc(it)
-    dump_data["accounts"] = dumped
-
-cdef save_players(dump_data: dict):
-    # players
-    it = db.players.begin()
-    end = db.players.end()
-
-    dumped = list()
-
-    while it != end:
-        dumped.append({"id": deref(it).first,
-                       "data": utils.jdump(deref(it).second.serialize()).decode("UTF-8", errors='ignore')})
-        inc(it)
-    dump_data["playerCharacters"] = dumped
-
-cdef save_item_prototypes(dump_data: dict):
-    # itemPrototypes
-    it = db.obj_proto.begin()
-    end = db.obj_proto.end()
-
-    dumped = list()
-
-    while it != end:
-        dumped.append({"id": deref(it).first,
-                       "data": utils.jdump(deref(it).second.serializeProto()).decode("UTF-8", errors='ignore')})
-        inc(it)
-    dump_data["itemPrototypes"] = dumped
-
-cdef save_npc_prototypes(dump_data: dict):
-    # npcPrototypes
-    it = db.mob_proto.begin()
-    end = db.mob_proto.end()
-
-    dumped = list()
-
-    while it != end:
-        dumped.append({"id": deref(it).first,
-                       "data": utils.jdump(deref(it).second.serializeProto()).decode("UTF-8", errors='ignore')})
-        inc(it)
-    dump_data["npcPrototypes"] = dumped
-
-cdef save_dgscript_prototypes(dump_data: dict):
-    # dgScriptPrototypes
-    it = db.trig_index.begin()
-    end = db.trig_index.end()
-
-    dumped = list()
-
-    while it != end:
-        dumped.append({"id": deref(it).first,
-                       "data": utils.jdump(deref(it).second.serializeProto()).decode("UTF-8", errors='ignore')})
-        inc(it)
-    dump_data["dgScriptPrototypes"] = dumped
-
-cdef save_characters(dump_data: dict):
-    # characters
-    it = db.uniqueCharacters.begin()
-    end = db.uniqueCharacters.end()
-
-    dumped = list()
-
-    while it != end:
-        ref = deref(it)
-        gen = ref.second.first
-        c = ref.second.second
-        dumped.append({"id": ref.first, "generation": gen, "vnum": c.vn,
-                       "data": utils.jdump(c.serializeInstance()).decode("UTF-8", errors='ignore'),
-                       "location": utils.jdump(c.serializeLocation()).decode("UTF-8", errors='ignore'),
-                       "relations": utils.jdump(c.serializeRelations()).decode("UTF-8", errors='ignore'),
-                       "name": c.name.decode("UTF-8", errors='ignore') if c.name is not NULL else "",
-                       "shortDesc": c.short_description if c.short_description is not NULL else ""})
-        inc(it)
-    dump_data["characters"] = dumped
-
-cdef save_items(dump_data: dict):
-    # items
-    it = db.uniqueObjects.begin()
-    end = db.uniqueObjects.end()
-
-    dumped = list()
-
-    while it != end:
-        ref = deref(it)
-        gen = ref.second.first
-        c = ref.second.second
-        dumped.append({"id": ref.first, "generation": gen, "vnum": c.vn,
-                       "data": utils.jdump(c.serializeInstance()).decode("UTF-8", errors='ignore'),
-                       "location": c.serializeLocation().decode("UTF-8", errors='ignore'), "slot": c.worn_on,
-                       "relations": utils.jdump(c.serializeRelations()).decode("UTF-8", errors='ignore'),
-                       "name": c.name.decode("UTF-8", errors='ignore') if c.name is not NULL else "",
-                       "shortDesc": c.short_description if c.short_description is not NULL else ""})
-        inc(it)
-    dump_data["items"] = dumped
-
-cdef save_scripts(dump_data: dict):
-    it = db.uniqueScripts.begin()
-    end = db.uniqueScripts.end()
-
-    dumped = list()
-
-    while it != end:
-        ref = deref(it)
-        gen = ref.second.first
-        c = ref.second.second
-        dumped.append({"id": ref.first, "generation": gen, "vnum": c.vn,
-                       "data": utils.jdump(c.serializeInstance()).decode("UTF-8", errors='ignore'),
-                       "location": c.serializeLocation().decode("UTF-8", errors='ignore'),
-                       "name": c.name.decode("UTF-8", errors='ignore') if c.name is not NULL else "",
-                       "num": c.order})
-        inc(it)
-    dump_data["dgscripts"] = dumped
-
-cdef save_globaldata(dump_data: dict):
-    dumped = list()
-    dumped.append({"name": "time", "data": utils.jdump(db.time_info.serialize()).decode("UTF-8", errors='ignore')})
-    dumped.append({"name": "weather", "data": utils.jdump(db.weather_info.serialize()).decode("UTF-8", errors='ignore')})
-
-    found = db.world.find(0)
-    if found != db.world.end():
-        dumped.append({"name": "dgGlobals", "data": utils.jdump(deref(found).second.serializeDgVars()).decode("UTF-8", errors='ignore')})
-
-    dump_data["globalData"] = dumped
-
-cdef save_all():
-        dump_data = dict()
-        start_time = time.perf_counter()
-
-        save_rooms(dump_data)
-        save_shops(dump_data)
-        save_guilds(dump_data)
-        save_zones(dump_data)
-        save_areas(dump_data)
-        save_accounts(dump_data)
-        save_players(dump_data)
-        save_item_prototypes(dump_data)
-        save_npc_prototypes(dump_data)
-        save_dgscript_prototypes(dump_data)
-        save_characters(dump_data)
-        save_items(dump_data)
-        save_scripts(dump_data)
-        save_globaldata(dump_data)
-
-        end_time = time.perf_counter()
-        print(f"Elapsed time to dump game: {end_time - start_time}")
-
-        asyncio.create_task(dump_all(dump_data))
 
 RUNNING = True
 
@@ -353,7 +112,7 @@ async def run_game_loop():
 
         save_timer -= deltaTimeInSeconds
         if save_timer <= 0.0:
-            save_all()
+            comm.runSave()
             save_timer = 60.0 * 5.0
 
         duration = end - start
@@ -460,113 +219,3 @@ cdef class _SkillManager:
 
 
 skill_manager = _SkillManager()
-
-BASIC_TABLES = ["zones", "areas", "itemPrototypes", "npcPrototypes", "shops", "guilds",
-                "rooms", "dgScriptPrototypes", "accounts", "playerCharacters"]
-
-SCHEMA = [f"CREATE TABLE IF NOT EXISTS {table} (id INTEGER PRIMARY KEY, data TEXT NOT NULL);" for table in BASIC_TABLES]
-
-SCHEMA.append("""
-    CREATE TABLE IF NOT EXISTS characters (
-           id INTEGER PRIMARY KEY,
-           generation INTEGER NOT NULL,
-           vnum INTEGER NOT NULL DEFAULT -1,
-           name TEXT,
-           shortDesc TEXT,
-           data TEXT NOT NULL,
-           location TEXT NOT NULL DEFAULT '{}',
-           relations TEXT NOT NULL DEFAULT '{}'
-        );""")
-
-SCHEMA.append("""
-    CREATE TABLE IF NOT EXISTS items (
-           id INTEGER PRIMARY KEY,
-           generation INTEGER NOT NULL,
-           vnum INTEGER NOT NULL DEFAULT -1,
-           name TEXT,
-           shortDesc TEXT,
-           data TEXT NOT NULL,
-           location TEXT NOT NULL DEFAULT '',
-           slot INTEGER NOT NULL DEFAULT 0,
-           relations TEXT NOT NULL DEFAULT '{}'
-        );""")
-
-SCHEMA.append("""
-
-
-        CREATE TABLE IF NOT EXISTS dgScripts (
-        	id INTEGER PRIMARY KEY,
-           generation INTEGER NOT NULL,
-           vnum INTEGER NOT NULL DEFAULT -1,
-           name TEXT,
-        	data TEXT NOT NULL,
-           location TEXT NOT NULL,
-           num INTEGER NOT NULL
-        );
-""")
-
-SCHEMA.append("""
-        CREATE TABLE IF NOT EXISTS globalData (
-           name TEXT PRIMARY KEY,
-           data TEXT NOT NULL
-        );
-""")
-
-async def dump_all(data: dict):
-    current_path = pathlib.Path.cwd() / "dumps"
-    current_path.mkdir(parents=True, exist_ok=True)  # Create the directory if it doesn't exist
-
-    # Format current time as YYYYMMDDHHMMSS
-    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    dump_path = current_path / f"dump-{timestamp}.sqlite3"
-
-    start_time = time.perf_counter()
-    temp_file = "dumps/dump.sqlite3"
-    if os.path.exists(temp_file):
-        os.remove(temp_file)
-    jrnl = f"{temp_file}-journal"
-    if os.path.exists(jrnl):
-        os.remove(jrnl)
-    errored = False
-    try:
-        async with Database(f'sqlite+aiosqlite:///{temp_file}') as db:
-            async with db.transaction():
-                for table in SCHEMA:
-                    await db.execute(table)
-
-                for table in BASIC_TABLES:
-                    if found_data := data.pop(table, None):
-                        query = f"INSERT INTO {table}(id, data) VALUES(:id, :data)"
-                        await db.execute_many(query, found_data)
-
-                if found_data := data.pop("characters", None):
-                    query = ("INSERT INTO characters (id, generation, vnum, name, shortDesc, data, location, relations)"
-                             "VALUES(:id, :generation, :vnum, :name, :shortDesc, :data, :location, :relations)")
-                    await db.execute_many(query, found_data)
-
-                if found_data := data.pop("items", None):
-                    query = ("INSERT INTO items (id, generation, vnum, name, shortDesc, data, location, slot, relations)"
-                             "VALUES(:id, :generation, :vnum, :name, :shortDesc, :data, :location, :slot, :relations)")
-                    await db.execute_many(query, found_data)
-
-                if found_data := data.pop("dgscripts", None):
-                    query = ("INSERT INTO dgscripts (id, generation, vnum, name, data, location, num)"
-                             "VALUES(:id, :generation, :vnum, :name, :data, :location, :num)")
-                    await db.execute_many(query, found_data)
-
-                if found_data := data.pop("globalData", None):
-                    query = ("INSERT INTO globalData (name, data)"
-                             "VALUES(:name, :data)")
-                    await db.execute_many(query, found_data)
-    except Exception as err:
-        errored = True
-        os.remove(temp_file)
-        logging.exception()
-
-    if not errored:
-        end_time = time.perf_counter()
-        print(f"elapsed dump time: {end_time - start_time}")
-        os.rename(temp_file, dump_path)
-        jrnl = f"{temp_file}-journal"
-        if os.path.exists(jrnl):
-            os.remove(jrnl)
